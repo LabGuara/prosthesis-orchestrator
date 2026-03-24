@@ -1,0 +1,46 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: prothesis-postgres
+    environment:
+      POSTGRES_DB: ${DB_NAME:-prothesis_logger}
+      POSTGRES_USER: ${DB_USER:-prothesis_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-prothesis_password}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-prothesis_user} -d ${DB_NAME:-prothesis_logger}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mosquitto:
+    image: eclipse-mosquitto:2
+    container_name: prothesis-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-h", "localhost", "-t", "$$SYS/#", "-C", "1", "-W", "3"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+
+  # app:
+  #   build: .
+  #   container_name: prothesis-app
+  #   env_file:
+  #     - .env
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     mosquitto:
+  #       condition: service_started
+  #   restart: unless-stopped
+
+volumes:
+  pg_data:

@@ -1,9 +1,6 @@
 from datetime import datetime, timezone
-import json
-
 from psycopg import Connection, connect
 from psycopg.types.json import Jsonb
-
 from app.config import Settings
 
 
@@ -23,6 +20,7 @@ class Database:
             f"user={self._settings.db_user} "
             f"password={self._settings.db_password}"
         )
+
         self._connection = connect(connection_string)
 
     def close(self) -> None:
@@ -33,7 +31,9 @@ class Database:
         if self._connection is None or self._connection.closed:
             self.connect()
 
+        # TODO: Consider sending a timestamp from the device instead of using the server time
         received_at = datetime.now(timezone.utc)
+        
         query = """
             INSERT INTO message_logs (id, received_at, payload)
             VALUES (%s, %s, %s)
@@ -44,7 +44,12 @@ class Database:
             cursor.execute(query, (message_id, received_at, Jsonb(payload)))
         self._connection.commit()
 
-    def insert_command_log(self, message_id: str, command_type: int, value: float) -> None:
+    def insert_command_log(
+        self,
+        message_id: str,
+        command_type: int,
+        value: float
+    ) -> None:
         if self._connection is None or self._connection.closed:
             self.connect()
 
@@ -60,14 +65,5 @@ class Database:
         self._connection.commit()
 
 
+# TODO: Consider if this helper function should be moved to a separate utils module
 
-def decode_payload(payload_bytes: bytes) -> dict:
-    decoded_text = payload_bytes.decode("utf-8", errors="replace")
-
-    try:
-        parsed = json.loads(decoded_text)
-        if isinstance(parsed, dict):
-            return parsed
-        return {"value": parsed}
-    except json.JSONDecodeError:
-        return {"raw": decoded_text}

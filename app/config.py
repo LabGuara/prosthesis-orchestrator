@@ -8,7 +8,7 @@ class Settings:
     mqtt_port: int
     mqtt_username: str | None
     mqtt_password: str | None
-    MQTT_RAW_TOPIC: list[str]
+    MQTT_RAW_TOPIC: str
     MQTT_PARSED_TOPIC: str
     MQTT_ACTIONS_TOPIC: str
     mqtt_qos: int
@@ -23,17 +23,13 @@ class Settings:
     log_level: str
 
 
-
 def load_settings() -> Settings:
-    topics_raw = os.getenv("MQTT_RAW_TOPIC", "prothesis/logs/raw")
-    topics = [topic.strip() for topic in topics_raw.split(",") if topic.strip()]
-
     return Settings(
         mqtt_host=os.getenv("MQTT_HOST", "localhost"),
         mqtt_port=int(os.getenv("MQTT_PORT", "1883")),
         mqtt_username=os.getenv("MQTT_USERNAME") or None,
         mqtt_password=os.getenv("MQTT_PASSWORD") or None,
-        MQTT_RAW_TOPIC=topics,
+        MQTT_RAW_TOPIC=os.getenv("MQTT_RAW_TOPIC", "prothesis/logs/raw"),
         MQTT_PARSED_TOPIC=os.getenv("MQTT_PARSED_TOPIC", "prothesis/logs/parsed"),
         MQTT_ACTIONS_TOPIC=os.getenv("MQTT_ACTIONS_TOPIC", "prothesis/actions"),
         mqtt_qos=int(os.getenv("MQTT_QOS", "1")),

@@ -1,8 +1,7 @@
 import logging
 from collections.abc import Callable
-
+from paho.mqtt.enums import CallbackAPIVersion
 import paho.mqtt.client as mqtt
-
 from app.config import Settings
 
 
@@ -16,7 +15,7 @@ class MqttConsumer:
         self._on_message_received = on_message_received
 
         self._client = mqtt.Client(
-            callback_api_version=mqtt.CallbackAPIVersion.VERSION2,
+            callback_api_version=CallbackAPIVersion.VERSION2,
             client_id=settings.mqtt_client_id,
         )
 
@@ -32,25 +31,39 @@ class MqttConsumer:
     def _on_connect(
         self,
         client: mqtt.Client,
-        userdata,
-        flags,
+        _userdata,
+        _flags,
         reason_code,
-        properties,
+        _properties,
     ) -> None:
         if reason_code != 0:
             logging.error("MQTT connect failed. reason_code=%s", reason_code)
             return
 
-        topics = [*self._settings.MQTT_RAW_TOPIC, self._settings.MQTT_ACTIONS_TOPIC]
+        topics = (self._settings.MQTT_RAW_TOPIC, self._settings.MQTT_ACTIONS_TOPIC)
         for topic in topics:
             client.subscribe(topic, qos=self._settings.mqtt_qos)
             logging.info("Subscribed to topic: %s", topic)
 
-    def _on_message(self, client: mqtt.Client, userdata, message: mqtt.MQTTMessage) -> None:
+    def _on_message(
+        self,
+        _client: mqtt.Client,
+        _userdata,
+        message: mqtt.MQTTMessage
+    ) -> None:
         self._on_message_received(message.topic, message.payload)
 
-    def publish(self, topic: str, payload: str) -> None:
-        result = self._client.publish(topic, payload=payload, qos=self._settings.mqtt_qos)
+    def publish(
+        self,
+        topic: str,
+        payload: str
+    ) -> None:
+        result = self._client.publish(
+            topic,
+            payload=payload,
+            qos=self._settings.mqtt_qos
+        )
+        
         if result.rc != mqtt.MQTT_ERR_SUCCESS:
             logging.error("Failed to publish parsed message. topic=%s rc=%s", topic, result.rc)
 
@@ -60,4 +73,5 @@ class MqttConsumer:
             port=self._settings.mqtt_port,
             keepalive=60,
         )
+        
         self._client.loop_forever(retry_first_connection=True)

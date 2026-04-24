@@ -1,17 +1,15 @@
 import logging
 import json
-import uuid
-
 from app.config import load_settings
-from app.db import Database, decode_payload
+from app.db import Database
 from app.mqtt_consumer import MqttConsumer
-
-
-ACTION_VALUE_TO_NAME = {
-    1: "Stand up",
-    2: "Walk",
-    3: "Climb stairs",
-}
+from app.utils import (
+    decode_payload,
+    parse_int_field,
+    parse_numeric_field,
+    pick_message_id,
+    build_action_message,
+)
 
 
 def configure_logging(level: str) -> None:
@@ -19,39 +17,6 @@ def configure_logging(level: str) -> None:
         level=level,
         format="%(asctime)s | %(levelname)s | %(message)s",
     )
-
-
-def pick_message_id(payload: dict) -> str:
-    payload_id = payload.get("id")
-    if isinstance(payload_id, str) and payload_id.strip():
-        return payload_id
-
-    return str(uuid.uuid4())
-
-
-def parse_int_field(payload: dict, key: str) -> int | None:
-    value = payload.get(key)
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, int):
-        return value
-    if isinstance(value, float) and value.is_integer():
-        return int(value)
-    return None
-
-
-def parse_numeric_field(payload: dict, key: str) -> float | None:
-    value = payload.get(key)
-    if isinstance(value, bool):
-        return None
-    if isinstance(value, (int, float)):
-        return float(value)
-    return None
-
-
-def build_action_message(action_value: int) -> str:
-    mode_name = ACTION_VALUE_TO_NAME.get(action_value, f"unknown mode ({action_value})")
-    return f"Gait mode changed to {mode_name}"
 
 
 def main() -> None:
@@ -85,9 +50,13 @@ def main() -> None:
                 command_type=command_type,
                 value=action_value_number,
             )
+
             logging.info("Stored command log from topic=%s id=%s", topic, message_id)
 
-            action_value = int(action_value_number) if action_value_number.is_integer() else -1
+            action_value = (
+                int(action_value_number) if action_value_number.is_integer() else -1
+            )
+
             parsed_action_log = {
                 "level": "normal",
                 "sensor_type": "action",
@@ -96,8 +65,12 @@ def main() -> None:
             }
 
             if consumer is not None:
-                consumer.publish(settings.MQTT_PARSED_TOPIC, json.dumps(parsed_action_log))
-                logging.info("Published parsed action to topic=%s", settings.MQTT_PARSED_TOPIC)
+                consumer.publish(
+                    settings.MQTT_PARSED_TOPIC, json.dumps(parsed_action_log)
+                )
+                logging.info(
+                    "Published parsed action to topic=%s", settings.MQTT_PARSED_TOPIC
+                )
 
             return
 
@@ -106,11 +79,14 @@ def main() -> None:
 
         if consumer is not None:
             consumer.publish(settings.MQTT_PARSED_TOPIC, json.dumps(payload))
-            logging.info("Published parsed message to topic=%s", settings.MQTT_PARSED_TOPIC)
+            logging.info(
+                "Published parsed message to topic=%s", settings.MQTT_PARSED_TOPIC
+            )
 
     consumer = MqttConsumer(settings=settings, on_message_received=handle_message)
 
     logging.info("Starting MQTT consumer...")
+
     try:
         consumer.run_forever()
     finally:

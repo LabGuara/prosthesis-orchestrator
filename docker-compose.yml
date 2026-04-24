@@ -30,17 +30,17 @@ services:
       timeout: 5s
       retries: 3
 
-  # app:
-  #   build: .
-  #   container_name: prothesis-app
-  #   env_file:
-  #     - .env
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     mosquitto:
-  #       condition: service_started
-  #   restart: unless-stopped
+  app:
+    build: .
+    container_name: prothesis-app
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+    restart: unless-stopped
 
 volumes:
   pg_data:

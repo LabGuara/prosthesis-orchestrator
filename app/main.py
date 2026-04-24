@@ -3,7 +3,7 @@ import json
 from app.config import load_settings
 from app.db import Database
 from app.mqtt_consumer import MqttConsumer
-from app.utils import (
+from app.message_utils import (
     decode_payload,
     parse_int_field,
     parse_numeric_field,

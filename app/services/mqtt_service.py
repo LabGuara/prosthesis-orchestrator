@@ -5,7 +5,7 @@ import paho.mqtt.client as mqtt
 from app.config import Settings
 
 
-class MqttConsumer:
+class MqttService:
     def __init__(
         self,
         settings: Settings,

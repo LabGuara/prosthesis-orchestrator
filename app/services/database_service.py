@@ -6,7 +6,7 @@ from app.models.command_log import CommandLog
 from app.models.log import Log
 
 
-class Database:
+class DatabaseService:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._connection: Connection | None = None

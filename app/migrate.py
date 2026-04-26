@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     configure_logging(settings.log_level)
 
-    db = DatabaseService(settings)
-    db.connect()
+    database_service = DatabaseService(settings)
+    database_service.connect()
 
-    db.run_migrations()
+    database_service.run_migrations()

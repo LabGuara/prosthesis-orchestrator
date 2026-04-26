@@ -36,9 +36,7 @@ def main() -> None:
 
         if mqtt_service is not None:
             mqtt_service.publish(settings.MQTT_PARSED_TOPIC, parsed_message_payload)
-            logging.info(
-                "Published parsed message to topic=%s", settings.MQTT_PARSED_TOPIC
-            )
+            logging.info("Published message to topic=%s", settings.MQTT_PARSED_TOPIC)
 
     mqtt_service = MqttService(settings=settings, on_message_received=handle_message)
 

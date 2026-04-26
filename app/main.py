@@ -1,16 +1,11 @@
 import logging
-import json
-from app.config import load_settings
+
+from app.config import configure_logging, load_settings
 from app.db import Database
+from app.models.command_log import CommandLog, GaitMode
+from app.models.log import Log
 from app.mqtt_consumer import MqttConsumer
-from app.message_utils import (
-    decode_payload,
-    parse_int_field,
-    parse_numeric_field,
-    pick_message_id,
-    build_action_message,
-)
-from app.utils import configure_logging
+from app.utils import decode_payload, generate_id
 
 
 def main() -> None:
@@ -24,55 +19,23 @@ def main() -> None:
 
     def handle_message(topic: str, payload_bytes: bytes) -> None:
         payload = decode_payload(payload_bytes)
-        message_id = pick_message_id(payload)
+        message_id = generate_id()
+
+        parsed_message_payload = ""
 
         if topic == settings.MQTT_ACTIONS_TOPIC:
-            command_type = parse_int_field(payload, "commandType")
-            action_value_number = parse_numeric_field(payload, "value")
-
-            if command_type is None or action_value_number is None:
-                logging.error(
-                    "Invalid action payload on topic=%s id=%s payload=%s",
-                    topic,
-                    message_id,
-                    payload,
-                )
-                return
-
-            db.insert_command_log(
-                message_id=message_id,
-                command_type=command_type,
-                value=action_value_number,
-            )
-
+            command_log = CommandLog(id=message_id, payload=payload)
+            db.insert_command_log(command_log)
+            parsed_message_payload = command_log.generate_parsed_log_message()
             logging.info("Stored command log from topic=%s id=%s", topic, message_id)
-
-            action_value = (
-                int(action_value_number) if action_value_number.is_integer() else -1
-            )
-
-            parsed_action_log = {
-                "level": "normal",
-                "sensor_type": "action",
-                "sensor_name": "action-01",
-                "message": build_action_message(action_value),
-            }
-
-            if consumer is not None:
-                consumer.publish(
-                    settings.MQTT_PARSED_TOPIC, json.dumps(parsed_action_log)
-                )
-                logging.info(
-                    "Published parsed action to topic=%s", settings.MQTT_PARSED_TOPIC
-                )
-
-            return
-
-        db.insert_log(message_id=message_id, payload=payload)
-        logging.info("Stored message from topic=%s id=%s", topic, message_id)
+        else:
+            log_entry = Log(message_id, payload)
+            db.insert_log(log_entry)
+            parsed_message_payload = log_entry.generate_parsed_log_message()
+            logging.info("Stored message from topic=%s id=%s", topic, message_id)
 
         if consumer is not None:
-            consumer.publish(settings.MQTT_PARSED_TOPIC, json.dumps(payload))
+            consumer.publish(settings.MQTT_PARSED_TOPIC, parsed_message_payload)
             logging.info(
                 "Published parsed message to topic=%s", settings.MQTT_PARSED_TOPIC
             )

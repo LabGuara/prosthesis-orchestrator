@@ -1,15 +1,18 @@
-from datetime import datetime, timezone
 import logging
 from pathlib import Path
 from psycopg import Connection, connect
-from psycopg.types.json import Jsonb
-from app.config import Settings, load_settings
+from app.config import Settings
+from app.models.command_log import CommandLog
+from app.models.log import Log
 
 
 class Database:
     def __init__(self, settings: Settings) -> None:
         self._settings = settings
         self._connection: Connection | None = None
+
+
+    """" Connection management methods """
 
     def _connection_string(self) -> str:
         return (
@@ -31,59 +34,8 @@ class Database:
         if self._connection is not None and not self._connection.closed:
             self._connection.close()
 
-    def insert_log(self, message_id: str, payload: dict) -> None:
-        if self._connection is None or self._connection.closed:
-            self.connect()
-
-        # TODO: Consider sending a timestamp from the device instead of using the server time
-        received_at = datetime.now(timezone.utc)
-
-        query = """
-            INSERT INTO message_logs (id, received_at, payload)
-            VALUES (%s, %s, %s)
-        """
-
-        assert self._connection is not None
-        with self._connection.cursor() as cursor:
-            cursor.execute(query, (message_id, received_at, Jsonb(payload)))
-        self._connection.commit()
-
-    def insert_command_log(
-        self,
-        message_id: str,
-        command_type: int,
-        value: float
-    ) -> None:
-        if self._connection is None or self._connection.closed:
-            self.connect()
-
-        received_at = datetime.now(timezone.utc)
-        query = """
-            INSERT INTO command_logs (id, received_at, command_type, value)
-            VALUES (%s, %s, %s, %s)
-        """
-
-        assert self._connection is not None
-        with self._connection.cursor() as cursor:
-            cursor.execute(query, (message_id, received_at, command_type, value))
-        self._connection.commit()
 
     """" Migration management methods """
-
-    def _ensure_migrations_table(self) -> None:
-        assert self._connection is not None
-
-        with self._connection.cursor() as cursor:
-            cursor.execute(
-                """
-                CREATE TABLE IF NOT EXISTS schema_migrations (
-                    filename TEXT PRIMARY KEY,
-                    applied_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-                )
-                """
-            )
-
-        self._connection.commit()
 
     def _get_applied(self) -> set[str]:
         assert self._connection is not None
@@ -99,7 +51,6 @@ class Database:
     def run_migrations(self) -> None:
         assert self._connection is not None
 
-        self._ensure_migrations_table()
         applied = self._get_applied()
 
         for migration_file in self._pending_files():
@@ -119,3 +70,52 @@ class Database:
             logging.info("Applied migration: %s", migration_file.name)
 
         logging.info("Migrations are up to date.")
+
+
+    """ Data manipulation methods """
+
+    def insert_log(self, log: Log) -> None:
+        if self._connection is None or self._connection.closed:
+            self.connect()
+
+        query = """
+            INSERT INTO logs (id, "timestamp", level, sensor_name, message)
+            VALUES (%s, %s, %s, %s, %s)
+        """
+
+        assert self._connection is not None
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                query,
+                (log.id, log.timestamp, log.level.name, log.sensor_name, log.message),
+            )
+        self._connection.commit()
+
+    def insert_command_log(self, command_log: CommandLog) -> None:
+        if self._connection is None or self._connection.closed:
+            self.connect()
+
+        query = """
+            INSERT INTO command_logs (id, "timestamp", command_type, value)
+            VALUES (%s, %s, %s, %s)
+        """
+
+
+        command_type_mapping = {
+            "GaitMode": "GAIT_MODE"
+        }
+
+        command_type = command_type_mapping[command_log.command.__class__.__name__]
+
+        assert self._connection is not None
+        with self._connection.cursor() as cursor:
+            cursor.execute(
+                query,
+                (
+                    command_log.id,
+                    command_log.timestamp,
+                    command_type,
+                    command_log.command.value,
+                ),
+            )
+        self._connection.commit()

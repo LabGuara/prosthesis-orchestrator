@@ -1,5 +1,6 @@
 import os
 from dataclasses import dataclass
+import logging
 
 
 @dataclass
@@ -40,4 +41,11 @@ def load_settings() -> Settings:
         db_user=os.getenv("DB_USER", "prothesis_user"),
         db_password=os.getenv("DB_PASSWORD", "prothesis_password"),
         log_level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    )
+
+
+def configure_logging(level: str) -> None:
+    logging.basicConfig(
+        level=level,
+        format="%(asctime)s | %(levelname)s | %(message)s",
     )

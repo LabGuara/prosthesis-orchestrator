@@ -51,17 +51,13 @@ docker compose exec postgres psql -U prothesis_user -d prothesis_logger -c "SELE
 `db/init.sql` runs only when PostgreSQL data volume is created for the first time.
 For schema changes after that, run SQL files from `db/migrations` manually.
 
-Run the commands table migration:
+Run all pending migrations:
 
-```powershell
-Get-Content .\db\migrations\20260323_001_create_commands_table.sql -Raw | docker compose exec -T postgres psql -U prothesis_user -d prothesis_logger
+```bash
+python -m app.migrate
 ```
 
-Check result:
-
-```powershell
-docker compose exec postgres psql -U prothesis_user -d prothesis_logger -c "\d+ command_logs"
-```
+docker compose exec postgres psql -U prothesis_user -d prothesis_logger -c "SELECT filename, applied_at FROM schema_migrations ORDER BY applied_at DESC;"
 
 ## Configuration
 All config is done with environment variables in `.env`.

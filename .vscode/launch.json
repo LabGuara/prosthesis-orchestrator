@@ -8,6 +8,14 @@
       "module": "app.main",
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal"
+    },
+    {
+      "name": "Run app.migrate",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "app.migrate",
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal"
     }
   ]
 }

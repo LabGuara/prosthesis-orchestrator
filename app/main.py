@@ -10,13 +10,7 @@ from app.message_utils import (
     pick_message_id,
     build_action_message,
 )
-
-
-def configure_logging(level: str) -> None:
-    logging.basicConfig(
-        level=level,
-        format="%(asctime)s | %(levelname)s | %(message)s",
-    )
+from app.utils import configure_logging
 
 
 def main() -> None:

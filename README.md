@@ -1,4 +1,4 @@
-# prothesis_logger
+# Prothesis Orchestrator
 
 Simple MQTT logger that subscribes to topics and stores each message in PostgreSQL.
 

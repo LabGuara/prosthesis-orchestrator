@@ -1,6 +1,0 @@
-{
-    "level": "warning",
-    "sensor_type": "temperature",
-    "sensor_name": "temp-01",
-    "message": "Overheat threshold exceeded: 89.4C"
-}

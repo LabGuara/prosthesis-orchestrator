@@ -6,7 +6,7 @@ from app.models.log_level import LogLevel
 from app.utils import parse_timestamp
 
 
-@dataclass(init=False)
+@dataclass(slots=True, init=False)
 class Log:
     id: str
     timestamp: datetime

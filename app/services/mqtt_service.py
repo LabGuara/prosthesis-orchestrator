@@ -3,7 +3,7 @@ import uuid
 from collections.abc import Callable
 from paho.mqtt.enums import CallbackAPIVersion
 import paho.mqtt.client as mqtt
-from app.config import Settings
+from app.settings import Settings
 
 
 class MqttService:
@@ -49,7 +49,7 @@ class MqttService:
             logging.error("MQTT connect failed. reason_code=%s", reason_code)
             return
 
-        topics = (self._settings.MQTT_RAW_TOPIC, self._settings.MQTT_ACTIONS_TOPIC)
+        topics = (self._settings.mqtt_logs_topic, self._settings.mqtt_command_logs_topic)
         for topic in topics:
             client.subscribe(topic, qos=self._settings.mqtt_qos)
             logging.info("Subscribed to topic: %s", topic)

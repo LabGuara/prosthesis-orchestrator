@@ -1,15 +1,15 @@
 import logging
 
-from app.config import configure_logging, load_settings
+from app.settings import Settings
 from app.services.database_service import DatabaseService
 from app.models.command_log import CommandLog, GaitMode
 from app.models.log import Log
 from app.services.mqtt_service import MqttService
-from app.utils import decode_payload, generate_id
+from app.utils import configure_logging, decode_payload, generate_id
 
 
 def main() -> None:
-    settings = load_settings()
+    settings = Settings()
     configure_logging(settings.log_level)
 
     database_service = DatabaseService(settings)
@@ -23,7 +23,7 @@ def main() -> None:
 
         parsed_message_payload = ""
 
-        if topic == settings.MQTT_ACTIONS_TOPIC:
+        if topic == settings.mqtt_command_logs_topic:
             command_log = CommandLog(id=message_id, payload=payload)
             database_service.insert_command_log(command_log)
             parsed_message_payload = command_log.generate_parsed_log_message()
@@ -35,8 +35,8 @@ def main() -> None:
             logging.info("Stored message from topic=%s id=%s", topic, message_id)
 
         if mqtt_service is not None:
-            mqtt_service.publish(settings.MQTT_PARSED_TOPIC, parsed_message_payload)
-            logging.info("Published message to topic=%s", settings.MQTT_PARSED_TOPIC)
+            mqtt_service.publish(settings.mqtt_parsed_topic, parsed_message_payload)
+            logging.info("Published message to topic=%s", settings.mqtt_parsed_topic)
 
     mqtt_service = MqttService(settings=settings, on_message_received=handle_message)
 

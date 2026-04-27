@@ -1,9 +1,10 @@
-from app.config import configure_logging, load_settings
+from app.settings import Settings
 from app.services.database_service import DatabaseService
+from app.utils import configure_logging
 
 
 if __name__ == "__main__":
-    settings = load_settings()
+    settings = Settings()
 
     configure_logging(settings.log_level)
 

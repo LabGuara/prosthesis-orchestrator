@@ -24,7 +24,7 @@ class GaitMode(IntEnum):
 Command = GaitMode
 
 
-@dataclass(init=False)
+@dataclass(slots=True, init=False)
 class CommandLog:
     id: str
     timestamp: datetime

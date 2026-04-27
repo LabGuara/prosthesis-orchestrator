@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from datetime import datetime
 from enum import IntEnum
+from datetime import datetime
 import json
 
 from app.models.log_level import LogLevel
@@ -50,7 +50,7 @@ class CommandLog:
         return json.dumps(
             {
                 "level": LogLevel.INFO,
-                "timestamp": self.timestamp,
+                "timestamp": self.timestamp.isoformat(),
                 "sensor_name": "command",
                 "message": message,
             }

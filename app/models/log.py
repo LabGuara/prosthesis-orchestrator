@@ -31,7 +31,7 @@ class Log:
         return json.dumps(
             {
                 "level": self.level.name,
-                "timestamp": self.timestamp,
+                "timestamp": self.timestamp.isoformat(),
                 "sensor_name": self.sensor_name,
                 "message": self.message,
             }

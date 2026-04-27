@@ -1,4 +1,5 @@
 import logging
+import uuid
 from collections.abc import Callable
 from paho.mqtt.enums import CallbackAPIVersion
 import paho.mqtt.client as mqtt
@@ -13,11 +14,14 @@ class MqttService:
     ) -> None:
         self._settings = settings
         self._on_message_received = on_message_received
+        self._client_id = self._build_unique_client_id()
 
         self._client = mqtt.Client(
             callback_api_version=CallbackAPIVersion.VERSION2,
-            client_id=settings.mqtt_client_id,
+            client_id=self._client_id,
         )
+
+        logging.info("Using MQTT client_id: %s", self._client_id)
 
         if settings.mqtt_username:
             self._client.username_pw_set(
@@ -27,6 +31,11 @@ class MqttService:
 
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
+
+    def _build_unique_client_id(self) -> str:
+        base = self._settings.mqtt_client_id or "prothesis-logger"
+        suffix = uuid.uuid4().hex[:8]
+        return f"{base[:14]}-{suffix}"
 
     def _on_connect(
         self,

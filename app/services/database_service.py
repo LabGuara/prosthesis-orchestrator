@@ -87,7 +87,13 @@ class DatabaseService:
         with self._connection.cursor() as cursor:
             cursor.execute(
                 query,
-                (log.id, log.timestamp, log.level.name, log.sensor_name, log.message),
+                (
+                    log.id,
+                    log.timestamp,
+                    log.level.name,
+                    log.sensor_name,
+                    log.message,
+                ),
             )
         self._connection.commit()
 

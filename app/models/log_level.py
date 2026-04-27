@@ -2,7 +2,6 @@ from enum import IntEnum
 
 
 class LogLevel(IntEnum):
-    DEBUG = 1
-    INFO = 2
-    WARNING = 3
-    ERROR = 4
+    INFO = 1
+    WARNING = 2
+    ERROR = 3

@@ -45,7 +45,7 @@ class DatabaseService:
             return {row[0] for row in cursor.fetchall()}
 
     def _pending_files(self) -> list[Path]:
-        migrations_dir = Path(__file__).resolve().parent.parent / "db" / "migrations"
+        migrations_dir = Path(__file__).resolve().parent.parent.parent / "db" / "migrations"
         return sorted(migrations_dir.glob("*.sql"))
 
     def run_migrations(self) -> None:

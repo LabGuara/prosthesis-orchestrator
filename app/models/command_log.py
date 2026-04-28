@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 from enum import IntEnum
 from datetime import datetime
-import json
 
 from app.models.log_level import LogLevel
+from app.models.parsed_log import ParsedLog
 from app.utils import parse_int_field, parse_timestamp
 
 
@@ -47,11 +47,10 @@ class CommandLog:
         if isinstance(self.command, GaitMode):
             message = self.command.build_gate_mode_action_message()
 
-        return json.dumps(
-            {
-                "level": LogLevel.INFO,
-                "timestamp": self.timestamp.isoformat(),
-                "sensor_name": "command",
-                "message": message,
-            }
+        parsed_log = ParsedLog(
+            level=LogLevel.INFO,
+            timestamp=self.timestamp,
+            sensor_name="command",
+            message=message,
         )
+        return parsed_log.generate_parsed_log_message()

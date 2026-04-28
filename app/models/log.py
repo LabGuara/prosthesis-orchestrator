@@ -1,8 +1,9 @@
-import json
 from dataclasses import dataclass
 from datetime import datetime
+import json
 
 from app.models.log_level import LogLevel
+from app.models.parsed_log import ParsedLog
 from app.utils import parse_timestamp
 
 
@@ -28,11 +29,10 @@ class Log:
         self.message = message
 
     def generate_parsed_log_message(self) -> str:
-        return json.dumps(
-            {
-                "level": self.level.name,
-                "timestamp": self.timestamp.isoformat(),
-                "sensor_name": self.sensor_name,
-                "message": self.message,
-            }
+        parsed_log = ParsedLog(
+            level=self.level,
+            timestamp=self.timestamp,
+            sensor_name=self.sensor_name,
+            message=self.message,
         )
+        return parsed_log.generate_parsed_log_message()

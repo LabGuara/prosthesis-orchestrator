@@ -63,7 +63,7 @@ docker compose exec postgres psql -U prothesis_user -d prothesis_logger -c "SELE
 All config is done with environment variables in `.env`.
 
 - `MQTT_HOST`, `MQTT_PORT`, `MQTT_USERNAME`, `MQTT_PASSWORD`
-- `MQTT_RAW_TOPIC` (comma-separated)
+- `MQTT_LOGS_TOPIC` (comma-separated)
 - `MQTT_QOS`
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 - `LOG_LEVEL`

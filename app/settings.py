@@ -27,9 +27,9 @@ class Settings:
         self.mqtt_port = int(os.getenv("MQTT_PORT", "1883"))
         self.mqtt_username = os.getenv("MQTT_USERNAME") or None
         self.mqtt_password = os.getenv("MQTT_PASSWORD") or None
-        self.mqtt_logs_topic = os.getenv("MQTT_RAW_TOPIC", "prothesis/logs/raw")
+        self.mqtt_logs_topic = os.getenv("MQTT_LOGS_TOPIC", "prothesis/logs/raw")
         self.mqtt_parsed_topic = os.getenv("MQTT_PARSED_TOPIC", "prothesis/logs/parsed")
-        self.mqtt_command_logs_topic = os.getenv("MQTT_ACTIONS_TOPIC", "prothesis/actions")
+        self.mqtt_command_logs_topic = os.getenv("MQTT_COMMAND_LOGS_TOPIC", "prothesis/actions")
         self.mqtt_qos = int(os.getenv("MQTT_QOS", "1"))
         self.mqtt_client_id = os.getenv("MQTT_CLIENT_ID", "prothesis-logger")
         self.db_host = os.getenv("DB_HOST", "localhost")

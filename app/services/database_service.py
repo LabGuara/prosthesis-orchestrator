@@ -1,6 +1,7 @@
 import logging
 from pathlib import Path
 from psycopg import Connection, connect
+
 from app.settings import Settings
 from app.models.command_log import CommandLog
 from app.models.log import Log

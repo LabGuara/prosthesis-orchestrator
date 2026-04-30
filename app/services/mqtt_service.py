@@ -29,14 +29,32 @@ class MqttService:
                 password=settings.mqtt_password,
             )
 
+        self._configure_tls()
+
+        # Enable paho debug logging and bind optional callbacks
+        self._client.enable_logger()
+        self._client.on_disconnect = self._on_disconnect
+        self._client.on_log = self._on_log
+
         self._client.on_connect = self._on_connect
         self._client.on_message = self._on_message
 
     def _build_unique_client_id(self) -> str:
-        base = self._settings.mqtt_client_id or "prothesis-logger"
+        base = self._settings.mqtt_client_id or "prothesis-orchestrator"
         suffix = uuid.uuid4().hex[:8]
         return f"{base[:14]}-{suffix}"
+    
+    def _configure_tls(self) -> None:
+        """
+        Configure TLS settings based on MQTT_TLS environment variable and port.
 
+        TLS is enabled if MQTT_TLS environment variable is set to 'true'
+        """
+
+        if self._settings.mqtt_tls:
+            self._client.tls_set()
+            logging.info("TLS enabled for MQTT connection")
+            
     def _on_connect(
         self,
         client: mqtt.Client,
@@ -53,6 +71,12 @@ class MqttService:
         for topic in topics:
             client.subscribe(topic, qos=self._settings.mqtt_qos)
             logging.info("Subscribed to topic: %s", topic)
+
+    def _on_disconnect(self, _client: mqtt.Client, _userdata, rc: int) -> None:
+        logging.warning("MQTT disconnected. rc=%s", rc)
+
+    def _on_log(self, _client: mqtt.Client, _userdata, _level, buf: str) -> None:
+        logging.debug("paho-mqtt: %s", buf)
 
     def _on_message(
         self,

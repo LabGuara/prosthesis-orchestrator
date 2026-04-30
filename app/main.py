@@ -2,7 +2,7 @@ import logging
 
 from app.settings import Settings
 from app.services.database_service import DatabaseService
-from app.models.command_log import CommandLog, GaitMode
+from app.models.command_log import CommandLog
 from app.models.log import Log
 from app.services.mqtt_service import MqttService
 from app.utils import configure_logging, decode_payload, generate_id

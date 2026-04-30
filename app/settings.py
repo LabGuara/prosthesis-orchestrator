@@ -13,6 +13,7 @@ class Settings:
     mqtt_parsed_topic: str
     mqtt_qos: int
     mqtt_client_id: str
+    mqtt_tls: bool
 
     db_host: str
     db_port: int
@@ -32,6 +33,7 @@ class Settings:
         self.mqtt_command_logs_topic = os.getenv("MQTT_COMMAND_LOGS_TOPIC", "prothesis/actions")
         self.mqtt_qos = int(os.getenv("MQTT_QOS", "1"))
         self.mqtt_client_id = os.getenv("MQTT_CLIENT_ID", "prothesis-logger")
+        self.mqtt_tls = os.getenv("MQTT_TLS", "false").lower() == "true"
         self.db_host = os.getenv("DB_HOST", "localhost")
         self.db_port = int(os.getenv("DB_PORT", "5432"))
         self.db_name = os.getenv("DB_NAME", "prothesis_logger")

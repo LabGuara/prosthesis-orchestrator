@@ -2,6 +2,8 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: prothesis-postgres
+    ports:
+    - "5432:5432"
     environment:
       POSTGRES_DB: ${DB_NAME:-prothesis_logger}
       POSTGRES_USER: ${DB_USER:-prothesis_user}

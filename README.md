@@ -46,6 +46,25 @@ docker compose exec mosquitto mosquitto_pub -h localhost -t prothesis/logs -m '{
 docker compose exec postgres psql -U prothesis_user -d prothesis_logger -c "SELECT id, received_at, payload FROM message_logs ORDER BY received_at DESC LIMIT 10;"
 ```
 
+## AWS run
+
+Use `docker-compose.aws.yml` when you deploy to AWS and want only the Python app + PostgreSQL.
+This file keeps MQTT settings from `.env` and removes the local Mosquitto service.
+
+```bash
+docker compose -f docker-compose.aws.yml up --build -d
+```
+
+The app will read these MQTT values from `.env` as usual:
+
+- `MQTT_HOST`
+- `MQTT_PORT`
+- `MQTT_USERNAME`
+- `MQTT_PASSWORD`
+- `MQTT_TLS`
+
+For AWS, the app connects to the external broker defined in `.env`, while PostgreSQL stays inside the same Compose stack.
+
 ## Migrations
 
 `db/init.sql` runs only when PostgreSQL data volume is created for the first time.

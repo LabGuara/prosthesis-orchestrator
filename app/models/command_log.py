@@ -23,8 +23,7 @@ class GaitMode(IntEnum):
     STAND_TO_SIT = 9
 
     def build_gate_mode_action_message(self) -> str:
-        mode_name = self.name.replace("_", " ").title()
-        return f"Gait mode changed to {mode_name}"
+        return str(self.value)
 
 
 Command = GaitMode

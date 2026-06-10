@@ -12,9 +12,15 @@ class CommandType(IntEnum):
 
 
 class GaitMode(IntEnum):
-    STAND_UP = 1
-    WALK = 2
-    CLIMB_STAIRS = 3
+    WALKING = 1
+    STAIR_ASCENT = 2
+    STANDING = 3
+    STAIR_DESCENT = 4
+    UPSLOPE_WALKING = 5
+    DOWNSLOPE_WALKING = 6
+    SITTING = 7
+    SIT_TO_STAND = 8
+    STAND_TO_SIT = 9
 
     def build_gate_mode_action_message(self) -> str:
         mode_name = self.name.replace("_", " ").title()

@@ -12,11 +12,4 @@ class ParsedLog:
         self.message = message
 
     def generate_parsed_log_message(self) -> str:
-        return json.dumps(
-            {
-                "level": self.level.name,
-                "timestamp": self.timestamp.isoformat(),
-                "sensor_name": self.sensor_name,
-                "message": self.message,
-            }
-        )
+        return self.message

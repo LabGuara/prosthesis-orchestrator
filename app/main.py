@@ -1,5 +1,9 @@
 import logging
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 from app.settings import Settings
 from app.services.database_service import DatabaseService
 from app.models.command_log import CommandLog

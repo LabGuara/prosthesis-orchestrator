@@ -9,6 +9,7 @@ from app.utils import parse_int_field, parse_timestamp
 
 class CommandType(IntEnum):
     GAIT_MODE = 1
+    POWER = 2
 
 
 class GaitMode(IntEnum):
@@ -26,7 +27,15 @@ class GaitMode(IntEnum):
         return str(self.value)
 
 
-Command = GaitMode
+class PowerState(IntEnum):
+    ON = 16
+    OFF = 17
+
+    def build_power_action_message(self) -> str:
+        return str(self.value)
+
+
+Command = GaitMode | PowerState
 
 
 @dataclass(slots=True, init=False)
@@ -44,6 +53,8 @@ class CommandLog:
         match command_type:
             case CommandType.GAIT_MODE:
                 self.command = GaitMode(parse_int_field(payload, "value"))
+            case CommandType.POWER:
+                self.command = PowerState(parse_int_field(payload, "value"))
             case _:
                 raise ValueError(f"Unsupported command type: {command_type}")
 
@@ -51,6 +62,8 @@ class CommandLog:
         message = ""
         if isinstance(self.command, GaitMode):
             message = self.command.build_gate_mode_action_message()
+        elif isinstance(self.command, PowerState):
+            message = self.command.build_power_action_message()
 
         parsed_log = ParsedLog(
             level=LogLevel.INFO,

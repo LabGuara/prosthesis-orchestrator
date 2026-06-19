@@ -109,7 +109,8 @@ class DatabaseService:
 
 
         command_type_mapping = {
-            "GaitMode": "GAIT_MODE"
+            "GaitMode": "GAIT_MODE",
+            "PowerState": "POWER",
         }
 
         command_type = command_type_mapping[command_log.command.__class__.__name__]

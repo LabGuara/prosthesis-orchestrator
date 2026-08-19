@@ -1,0 +1,3 @@
+consertar os docker composes (porque duas versoes sendo que a local nem tem o mosquitto)
+
+remover arquivos de handoff

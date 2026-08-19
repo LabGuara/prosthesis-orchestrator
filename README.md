@@ -84,8 +84,29 @@ All config is done with environment variables in `.env`.
 - `MQTT_HOST`, `MQTT_PORT`, `MQTT_USERNAME`, `MQTT_PASSWORD`
 - `MQTT_LOGS_TOPIC` (comma-separated)
 - `MQTT_QOS`
+- `MQTT_POWER_FEEDBACK_TOPIC`, `MQTT_POWER_FEEDBACK_PARSED_TOPIC`
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 - `LOG_LEVEL`
+
+## Power command feedback
+
+The communication bridge answers every power command (`16` / `17`) with a JSON message on
+`MQTT_POWER_FEEDBACK_TOPIC` (default `prothesis/actions/feedback`). The value must match the
+bridge's own `MQTT_POWER_FEEDBACK_TOPIC` on the Raspberry Pi.
+
+For each feedback message the orchestrator:
+
+1. stores it in `logs` with `sensor_name = power_feedback`, level `INFO` on `success` and
+   `ERROR` on `failure`, and the bridge `message` kept verbatim in the log text;
+2. republishes the normalized payload (`timestamp`, `command`, `status`, `state`, `message`)
+   on `MQTT_POWER_FEEDBACK_PARSED_TOPIC` (default `prothesis/actions/feedback/parsed`).
+
+Malformed feedback (missing field or unknown enum value) is logged and discarded.
+
+```bash
+docker compose exec mosquitto mosquitto_pub -h localhost -t prothesis/actions/feedback \
+  -m '{"timestamp":"2026-08-17T12:00:00.421870000+00:00","command":"power_on","status":"success","state":"on","message":"started RoboticLegControl (sudo pid 4312)"}'
+```
 
 ## Cloud migration (same app image)
 For production/cloud, keep this Python app unchanged and switch only endpoints/credentials:

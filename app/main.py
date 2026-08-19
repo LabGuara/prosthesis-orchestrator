@@ -8,6 +8,7 @@ from app.settings import Settings
 from app.services.database_service import DatabaseService
 from app.models.command_log import CommandLog
 from app.models.log import Log
+from app.models.power_feedback import PowerFeedback
 from app.services.mqtt_service import MqttService
 from app.utils import configure_logging, decode_payload, generate_id
 
@@ -31,11 +32,36 @@ def main() -> None:
         if topic == settings.mqtt_command_logs_topic:
             command_log = CommandLog(id=message_id, payload=payload)
             database_service.insert_command_log(command_log)
-            
+
             parsed_message_topic = settings.mqtt_command_logs_parsed_topic
             parsed_message_payload = command_log.generate_parsed_log_message()
-            
+
             logging.info("Stored command log from topic=%s id=%s", topic, message_id)
+        elif topic == settings.mqtt_power_feedback_topic:
+            try:
+                power_feedback = PowerFeedback(id=message_id, payload=payload)
+            except ValueError as error:
+                logging.error(
+                    "Discarded malformed power feedback from topic=%s id=%s: %s",
+                    topic,
+                    message_id,
+                    error,
+                )
+                return
+
+            database_service.insert_log(power_feedback.build_log())
+
+            parsed_message_topic = settings.mqtt_power_feedback_parsed_topic
+            parsed_message_payload = power_feedback.generate_parsed_log_message()
+
+            logging.info(
+                "Stored power feedback from topic=%s id=%s command=%s status=%s state=%s",
+                topic,
+                message_id,
+                power_feedback.command.value,
+                power_feedback.status.value,
+                power_feedback.state.value,
+            )
         else:
             log_entry = Log(message_id, payload)
             database_service.insert_log(log_entry)

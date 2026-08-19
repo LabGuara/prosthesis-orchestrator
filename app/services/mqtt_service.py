@@ -67,7 +67,11 @@ class MqttService:
             logging.error("MQTT connect failed. reason_code=%s", reason_code)
             return
 
-        topics = (self._settings.mqtt_logs_topic, self._settings.mqtt_command_logs_topic)
+        topics = (
+            self._settings.mqtt_logs_topic,
+            self._settings.mqtt_command_logs_topic,
+            self._settings.mqtt_power_feedback_topic,
+        )
         for topic in topics:
             client.subscribe(topic, qos=self._settings.mqtt_qos)
             logging.info("Subscribed to topic: %s", topic)

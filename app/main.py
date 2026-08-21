@@ -55,12 +55,13 @@ def main() -> None:
             parsed_message_payload = power_feedback.generate_parsed_log_message()
 
             logging.info(
-                "Stored power feedback from topic=%s id=%s command=%s status=%s state=%s",
+                "Stored power feedback from topic=%s id=%s command=%s status=%s state=%s gait=%s",
                 topic,
                 message_id,
                 power_feedback.command.value,
                 power_feedback.status.value,
                 power_feedback.state.value,
+                power_feedback.gait.value,
             )
         else:
             log_entry = Log(message_id, payload)

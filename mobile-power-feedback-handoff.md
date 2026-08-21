@@ -11,7 +11,7 @@ today. What is new is that a reply always comes back.
 
 | | |
 | --- | --- |
-| Feedback topic (app subscribes) | `prothesis/actions/feedback/parsed` |
+| Feedback topic (app subscribes) | `prosthesis/actions/feedback/parsed` |
 | Orchestrator env var | `MQTT_POWER_FEEDBACK_PARSED_TOPIC` |
 | Direction | orchestrator → mobile app |
 | QoS | 1 |
@@ -22,28 +22,28 @@ today. What is new is that a reply always comes back.
 ## Message flow
 
 ```
-mobile app  --{"command_type":2,"value":16}-->  prothesis/actions
+mobile app  --{"command_type":2,"value":16}-->  prosthesis/actions
                                                      |
                                             orchestrator (stores command_log)
                                                      |
-                                                 "16"  -->  prothesis/actions/parsed
+                                                 "16"  -->  prosthesis/actions/parsed
                                                                   |
                                                           bridge on the Raspberry Pi
                                                         (starts/stops RoboticLegControl)
                                                                   |
-                                        prothesis/actions/feedback  <--  {JSON feedback}
+                                        prosthesis/actions/feedback  <--  {JSON feedback}
                                                      |
                                         orchestrator (stores a log row)
                                                      |
-mobile app  <--{JSON feedback}--  prothesis/actions/feedback/parsed
+mobile app  <--{JSON feedback}--  prosthesis/actions/feedback/parsed
 ```
 
-The app only needs to touch the two ends: it publishes on `prothesis/actions` and subscribes to
-`prothesis/actions/feedback/parsed`. The middle topics are bridge/orchestrator internals.
+The app only needs to touch the two ends: it publishes on `prosthesis/actions` and subscribes to
+`prosthesis/actions/feedback/parsed`. The middle topics are bridge/orchestrator internals.
 
 ## Command side (unchanged, for reference)
 
-Commands are published on `prothesis/actions` (orchestrator env `MQTT_COMMAND_LOGS_TOPIC`) as
+Commands are published on `prosthesis/actions` (orchestrator env `MQTT_COMMAND_LOGS_TOPIC`) as
 JSON:
 
 ```json
@@ -164,7 +164,7 @@ Useful for test fixtures and for wording the UI. Again: display only, never bran
 
 ## What to implement in the mobile app
 
-1. **Subscribe** to `prothesis/actions/feedback/parsed` at QoS 1, on the same broker and
+1. **Subscribe** to `prosthesis/actions/feedback/parsed` at QoS 1, on the same broker and
    credentials already used for commands. Re-subscribe on every reconnect.
 2. **Parse** the JSON. Ignore unknown fields; treat a missing required field or an unknown enum
    value as malformed — log it and ignore the message, never crash the MQTT callback.
@@ -206,7 +206,7 @@ Every feedback message is also written to the orchestrator's `logs` table as an 
 
 Relevant only if the app renders log history from the database: power feedback now shows up there
 alongside sensor logs, filterable by `sensor_name = 'power_feedback'`. It is **not** published on
-`prothesis/logs/parsed` — that topic still carries only sensor log text.
+`prosthesis/logs/parsed` — that topic still carries only sensor log text.
 
 ## Known gaps — not in this version
 
@@ -225,13 +225,13 @@ Flagging these so the app design accounts for them rather than assuming they exi
 
 The app should read the feedback topic from its own configuration rather than hardcoding it, and
 the string must match the orchestrator's `MQTT_POWER_FEEDBACK_PARSED_TOPIC` (default
-`prothesis/actions/feedback/parsed`).
+`prosthesis/actions/feedback/parsed`).
 
 ## Orchestrator-side changes (reference)
 
 | File | Change |
 | --- | --- |
-| `app/settings.py` | new `mqtt_power_feedback_topic` (env `MQTT_POWER_FEEDBACK_TOPIC`, default `prothesis/actions/feedback`) and `mqtt_power_feedback_parsed_topic` (env `MQTT_POWER_FEEDBACK_PARSED_TOPIC`, default `prothesis/actions/feedback/parsed`) |
+| `app/settings.py` | new `mqtt_power_feedback_topic` (env `MQTT_POWER_FEEDBACK_TOPIC`, default `prosthesis/actions/feedback`) and `mqtt_power_feedback_parsed_topic` (env `MQTT_POWER_FEEDBACK_PARSED_TOPIC`, default `prosthesis/actions/feedback/parsed`) |
 | `app/models/power_feedback.py` | new — `PowerCommand`, `PowerFeedbackStatus`, `ProsthesisState`, the `PowerFeedback` parser/validator, the log row builder and the parsed payload builder |
 | `app/services/mqtt_service.py` | subscribes to the bridge feedback topic on connect |
 | `app/main.py` | new routing branch: validate the feedback, insert a log row, republish the normalized payload on the parsed topic; malformed payloads are logged and discarded |

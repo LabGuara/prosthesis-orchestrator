@@ -1,4 +1,4 @@
-# Prothesis Orchestrator
+# prosthesis Orchestrator
 
 Simple MQTT logger that subscribes to topics and stores each message in PostgreSQL.
 
@@ -37,13 +37,13 @@ docker compose up --build
 3. Publish a test MQTT message:
 
 ```bash
-docker compose exec mosquitto mosquitto_pub -h localhost -t prothesis/logs -m '{"id":"msg-001","temperature":36.8}'
+docker compose exec mosquitto mosquitto_pub -h localhost -t prosthesis/logs -m '{"id":"msg-001","temperature":36.8}'
 ```
 
 4. Query logs in PostgreSQL:
 
 ```bash
-docker compose exec postgres psql -U prothesis_user -d prothesis_logger -c "SELECT id, received_at, payload FROM message_logs ORDER BY received_at DESC LIMIT 10;"
+docker compose exec postgres psql -U prosthesis_user -d prosthesis_logger -c "SELECT id, received_at, payload FROM message_logs ORDER BY received_at DESC LIMIT 10;"
 ```
 
 ## AWS run
@@ -76,7 +76,7 @@ Run all pending migrations:
 python -m app.migrate
 ```
 
-docker compose exec postgres psql -U prothesis_user -d prothesis_logger -c "SELECT filename, applied_at FROM schema_migrations ORDER BY applied_at DESC;"
+docker compose exec postgres psql -U prosthesis_user -d prosthesis_logger -c "SELECT filename, applied_at FROM schema_migrations ORDER BY applied_at DESC;"
 
 ## Configuration
 All config is done with environment variables in `.env`.
@@ -91,7 +91,7 @@ All config is done with environment variables in `.env`.
 ## Power command feedback
 
 The communication bridge answers every power command (`16` / `17`) with a JSON message on
-`MQTT_POWER_FEEDBACK_TOPIC` (default `prothesis/actions/feedback`). The value must match the
+`MQTT_POWER_FEEDBACK_TOPIC` (default `prosthesis/actions/feedback`). The value must match the
 bridge's own `MQTT_POWER_FEEDBACK_TOPIC` on the Raspberry Pi.
 
 For each feedback message the orchestrator:
@@ -99,12 +99,12 @@ For each feedback message the orchestrator:
 1. stores it in `logs` with `sensor_name = power_feedback`, level `INFO` on `success` and
    `ERROR` on `failure`, and the bridge `message` kept verbatim in the log text;
 2. republishes the normalized payload (`timestamp`, `command`, `status`, `state`, `message`)
-   on `MQTT_POWER_FEEDBACK_PARSED_TOPIC` (default `prothesis/actions/feedback/parsed`).
+   on `MQTT_POWER_FEEDBACK_PARSED_TOPIC` (default `prosthesis/actions/feedback/parsed`).
 
 Malformed feedback (missing field or unknown enum value) is logged and discarded.
 
 ```bash
-docker compose exec mosquitto mosquitto_pub -h localhost -t prothesis/actions/feedback \
+docker compose exec mosquitto mosquitto_pub -h localhost -t prosthesis/actions/feedback \
   -m '{"timestamp":"2026-08-17T12:00:00.421870000+00:00","command":"power_on","status":"success","state":"on","message":"started RoboticLegControl (sudo pid 4312)"}'
 ```
 

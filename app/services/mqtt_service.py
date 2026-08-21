@@ -40,7 +40,7 @@ class MqttService:
         self._client.on_message = self._on_message
 
     def _build_unique_client_id(self) -> str:
-        base = self._settings.mqtt_client_id or "prothesis-orchestrator"
+        base = self._settings.mqtt_client_id or "prosthesis-orchestrator"
         suffix = uuid.uuid4().hex[:8]
         return f"{base[:14]}-{suffix}"
     

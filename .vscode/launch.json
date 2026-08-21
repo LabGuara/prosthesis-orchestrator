@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run Prothesis Orchestrator",
+      "name": "Run prosthesis Orchestrator",
       "type": "debugpy",
       "request": "launch",
       "module": "app.main",

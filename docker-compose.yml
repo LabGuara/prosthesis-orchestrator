@@ -1,25 +1,25 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: prothesis-postgres
+    container_name: prosthesis-postgres
     environment:
-      POSTGRES_DB: ${DB_NAME:-prothesis_logger}
-      POSTGRES_USER: ${DB_USER:-prothesis_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-prothesis_password}
+      POSTGRES_DB: ${DB_NAME:-prosthesis_logger}
+      POSTGRES_USER: ${DB_USER:-prosthesis_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-prosthesis_password}
     ports:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-prothesis_user} -d ${DB_NAME:-prothesis_logger}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-prosthesis_user} -d ${DB_NAME:-prosthesis_logger}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   app:
     build: .
-    container_name: prothesis-app
+    container_name: prosthesis-app
     env_file:
       - .env
     environment:

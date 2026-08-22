@@ -12,6 +12,7 @@ from app.utils import parse_int_field, parse_timestamp
 class PowerCommand(StrEnum):
     POWER_ON = "power_on"
     POWER_OFF = "power_off"
+    SET_GAIT = "set_gait"
 
 
 class PowerFeedbackStatus(StrEnum):

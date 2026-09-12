@@ -7,9 +7,14 @@ from app.models.parsed_log import ParsedLog
 from app.utils import parse_int_field, parse_timestamp
 
 
+MINIMUM_ACTUATOR_CURRENT = 3000
+MAXIMUM_ACTUATOR_CURRENT = 15000
+
+
 class CommandType(IntEnum):
     GAIT_MODE = 1
     POWER = 2
+    ACTUATOR_CURRENT = 3
 
 
 class GaitMode(IntEnum):
@@ -35,7 +40,24 @@ class PowerState(IntEnum):
         return str(self.value)
 
 
-Command = GaitMode | PowerState
+@dataclass(slots=True, frozen=True)
+class ActuatorCurrent:
+    """Raw actuator current setpoint, not an enum: any value in the accepted range is valid."""
+
+    value: int
+
+    def __post_init__(self) -> None:
+        if not MINIMUM_ACTUATOR_CURRENT <= self.value <= MAXIMUM_ACTUATOR_CURRENT:
+            raise ValueError(
+                f"Actuator current out of range "
+                f"({MINIMUM_ACTUATOR_CURRENT}-{MAXIMUM_ACTUATOR_CURRENT}): {self.value}"
+            )
+
+    def build_actuator_current_action_message(self) -> str:
+        return str(self.value)
+
+
+Command = GaitMode | PowerState | ActuatorCurrent
 
 
 @dataclass(slots=True, init=False)
@@ -55,6 +77,11 @@ class CommandLog:
                 self.command = GaitMode(parse_int_field(payload, "value"))
             case CommandType.POWER:
                 self.command = PowerState(parse_int_field(payload, "value"))
+            case CommandType.ACTUATOR_CURRENT:
+                actuator_current = parse_int_field(payload, "value")
+                if actuator_current is None:
+                    raise ValueError("Missing or non-integer actuator current value")
+                self.command = ActuatorCurrent(actuator_current)
             case _:
                 raise ValueError(f"Unsupported command type: {command_type}")
 
@@ -64,6 +91,8 @@ class CommandLog:
             message = self.command.build_gate_mode_action_message()
         elif isinstance(self.command, PowerState):
             message = self.command.build_power_action_message()
+        elif isinstance(self.command, ActuatorCurrent):
+            message = self.command.build_actuator_current_action_message()
 
         parsed_log = ParsedLog(
             level=LogLevel.INFO,

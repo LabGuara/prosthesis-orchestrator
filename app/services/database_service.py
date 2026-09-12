@@ -111,6 +111,7 @@ class DatabaseService:
         command_type_mapping = {
             "GaitMode": "GAIT_MODE",
             "PowerState": "POWER",
+            "ActuatorCurrent": "ACTUATOR_CURRENT",
         }
 
         command_type = command_type_mapping[command_log.command.__class__.__name__]

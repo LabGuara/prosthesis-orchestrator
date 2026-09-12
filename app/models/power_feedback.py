@@ -13,6 +13,7 @@ class PowerCommand(StrEnum):
     POWER_ON = "power_on"
     POWER_OFF = "power_off"
     SET_GAIT = "set_gait"
+    SET_ACTUATOR_CURRENT = "set_actuator_current"
 
 
 class PowerFeedbackStatus(StrEnum):
@@ -49,8 +50,20 @@ def _parse_gait_field(payload: dict, key: str) -> GaitMode:
         raise ValueError(f"Unsupported value for field {key}: {value!r}") from None
 
 
+def _parse_optional_current_field(payload: dict, key: str) -> int | None:
+    # Reported, not commanded: no range check here, so a surprising value still reaches the log.
+    if key not in payload:
+        return None
+
+    value = parse_int_field(payload, key)
+    if value is None:
+        raise ValueError(f"Non-integer field: {key}")
+
+    return value
+
+
 def _parse_status_field(payload: dict) -> PowerFeedbackStatus:
-    # The bridge sends `success` as a boolean; earlier builds sent `status` as a string.
+    # The bridge sends `status` as a string; the boolean `success` is a fallback for older builds.
     if "status" in payload:
         return _parse_enum_field(payload, "status", PowerFeedbackStatus)
 
@@ -69,6 +82,7 @@ class PowerFeedback:
     status: PowerFeedbackStatus
     state: ProsthesisState
     gait: GaitMode
+    current: int | None
     message: str
 
     def __init__(self, id: str, payload: dict) -> None:
@@ -82,6 +96,7 @@ class PowerFeedback:
         self.status = _parse_status_field(payload)
         self.state = _parse_enum_field(payload, "state", ProsthesisState)
         self.gait = _parse_gait_field(payload, "gait")
+        self.current = _parse_optional_current_field(payload, "current")
 
         message = payload.get("message")
         if not isinstance(message, str):
@@ -104,10 +119,11 @@ class PowerFeedback:
         return Log(self.id, payload)
 
     def build_log_message(self) -> str:
-        return (
-            f"{self.command.value} {self.status.value} "
-            f"(state: {self.state.value}, gait: {self.gait.name.lower()}): {self.message}"
-        )
+        details = f"state: {self.state.value}, gait: {self.gait.name.lower()}"
+        if self.current is not None:
+            details = f"{details}, current: {self.current}"
+
+        return f"{self.command.value} {self.status.value} ({details}): {self.message}"
 
     def generate_parsed_log_message(self) -> str:
         parsed_payload = {
@@ -116,6 +132,7 @@ class PowerFeedback:
             "status": self.status.value,
             "state": self.state.value,
             "gait": self.gait.value,
+            "current": self.current,
             "message": self.message,
         }
         return json.dumps(parsed_payload, ensure_ascii=False)

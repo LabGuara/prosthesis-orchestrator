@@ -88,9 +88,31 @@ All config is done with environment variables in `.env`.
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 - `LOG_LEVEL`
 
-## Power command feedback
+## Commands
 
-The communication bridge answers every power command (`16` / `17`) with a JSON message on
+Every command has the same shape, whatever its type, from the app to the orchestrator
+(`MQTT_COMMAND_LOGS_TOPIC`, default `prosthesis/actions`) and from the orchestrator to the
+bridge (`MQTT_COMMAND_LOGS_PARSED_TOPIC`, default `prosthesis/actions/parsed`):
+
+```json
+{"timestamp": "2026-08-17T12:00:00+00:00", "command_type": 2, "value": 1}
+```
+
+The command is identified by `command_type` alone; `value` is validated against the range of
+that type:
+
+| `command_type` | Command | `value` |
+| --- | --- | --- |
+| `1` | gait mode | `1`-`9` |
+| `2` | power | `1` on, `2` off |
+| `3` | actuator current | `3000`-`15000` (mA) |
+
+Each valid command is stored in `command_logs` and republished, normalized, on the parsed topic.
+Malformed commands (missing field, unknown type or value out of range) are logged and discarded.
+
+## Command feedback
+
+The communication bridge answers every command with a JSON message on
 `MQTT_POWER_FEEDBACK_TOPIC` (default `prosthesis/actions/feedback`). The value must match the
 bridge's own `MQTT_POWER_FEEDBACK_TOPIC` on the Raspberry Pi.
 
@@ -98,7 +120,7 @@ For each feedback message the orchestrator:
 
 1. stores it in `logs` with `sensor_name = power_feedback`, level `INFO` on `success` and
    `ERROR` on `failure`, and the bridge `message` kept verbatim in the log text;
-2. republishes the normalized payload (`timestamp`, `command`, `status`, `state`, `message`)
+2. republishes the normalized payload (`timestamp`, `command`, `status`, `state`, `gait`, `current`, `message`)
    on `MQTT_POWER_FEEDBACK_PARSED_TOPIC` (default `prosthesis/actions/feedback/parsed`).
 
 Malformed feedback (missing field or unknown enum value) is logged and discarded.

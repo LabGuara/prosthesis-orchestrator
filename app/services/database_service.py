@@ -107,15 +107,6 @@ class DatabaseService:
             VALUES (%s, %s, %s, %s)
         """
 
-
-        command_type_mapping = {
-            "GaitMode": "GAIT_MODE",
-            "PowerState": "POWER",
-            "ActuatorCurrent": "ACTUATOR_CURRENT",
-        }
-
-        command_type = command_type_mapping[command_log.command.__class__.__name__]
-
         assert self._connection is not None
         with self._connection.cursor() as cursor:
             cursor.execute(
@@ -123,8 +114,8 @@ class DatabaseService:
                 (
                     command_log.id,
                     command_log.timestamp,
-                    command_type,
-                    command_log.command.value,
+                    command_log.command_type.name,
+                    command_log.value,
                 ),
             )
         self._connection.commit()

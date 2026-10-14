@@ -1,9 +1,9 @@
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum
 from datetime import datetime
+import json
 
-from app.models.log_level import LogLevel
-from app.models.parsed_log import ParsedLog
 from app.utils import parse_int_field, parse_timestamp
 
 
@@ -28,16 +28,10 @@ class GaitMode(IntEnum):
     SIT_TO_STAND = 8
     STAND_TO_SIT = 9
 
-    def build_gate_mode_action_message(self) -> str:
-        return str(self.value)
-
 
 class PowerState(IntEnum):
-    ON = 16
-    OFF = 17
-
-    def build_power_action_message(self) -> str:
-        return str(self.value)
+    ON = 1
+    OFF = 2
 
 
 @dataclass(slots=True, frozen=True)
@@ -53,51 +47,53 @@ class ActuatorCurrent:
                 f"({MINIMUM_ACTUATOR_CURRENT}-{MAXIMUM_ACTUATOR_CURRENT}): {self.value}"
             )
 
-    def build_actuator_current_action_message(self) -> str:
-        return str(self.value)
-
 
 Command = GaitMode | PowerState | ActuatorCurrent
+
+COMMAND_PARSERS: dict[CommandType, Callable[[int], Command]] = {
+    CommandType.GAIT_MODE: GaitMode,
+    CommandType.POWER: PowerState,
+    CommandType.ACTUATOR_CURRENT: ActuatorCurrent,
+}
+
+
+def _parse_command_type(payload: dict) -> CommandType:
+    value = parse_int_field(payload, "command_type")
+    if value is None:
+        raise ValueError("Missing or non-integer field: command_type")
+
+    try:
+        return CommandType(value)
+    except ValueError:
+        raise ValueError(f"Unsupported command type: {value}") from None
 
 
 @dataclass(slots=True, init=False)
 class CommandLog:
     id: str
     timestamp: datetime
+    command_type: CommandType
     command: Command
 
     def __init__(self, id: str, payload: dict) -> None:
         self.id = id
         self.timestamp = parse_timestamp(payload.get("timestamp"))
+        self.command_type = _parse_command_type(payload)
 
-        command_type = parse_int_field(payload, "command_type")
+        value = parse_int_field(payload, "value")
+        if value is None:
+            raise ValueError("Missing or non-integer field: value")
 
-        match command_type:
-            case CommandType.GAIT_MODE:
-                self.command = GaitMode(parse_int_field(payload, "value"))
-            case CommandType.POWER:
-                self.command = PowerState(parse_int_field(payload, "value"))
-            case CommandType.ACTUATOR_CURRENT:
-                actuator_current = parse_int_field(payload, "value")
-                if actuator_current is None:
-                    raise ValueError("Missing or non-integer actuator current value")
-                self.command = ActuatorCurrent(actuator_current)
-            case _:
-                raise ValueError(f"Unsupported command type: {command_type}")
+        self.command = COMMAND_PARSERS[self.command_type](value)
+
+    @property
+    def value(self) -> int:
+        return int(self.command.value)
 
     def generate_parsed_log_message(self) -> str:
-        message = ""
-        if isinstance(self.command, GaitMode):
-            message = self.command.build_gate_mode_action_message()
-        elif isinstance(self.command, PowerState):
-            message = self.command.build_power_action_message()
-        elif isinstance(self.command, ActuatorCurrent):
-            message = self.command.build_actuator_current_action_message()
-
-        parsed_log = ParsedLog(
-            level=LogLevel.INFO,
-            timestamp=self.timestamp,
-            sensor_name="command",
-            message=message,
-        )
-        return parsed_log.generate_parsed_log_message()
+        parsed_payload = {
+            "timestamp": self.timestamp.isoformat(),
+            "command_type": int(self.command_type),
+            "value": self.value,
+        }
+        return json.dumps(parsed_payload)

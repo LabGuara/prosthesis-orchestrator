@@ -30,13 +30,29 @@ def main() -> None:
         parsed_message_payload = ""
 
         if topic == settings.mqtt_command_logs_topic:
-            command_log = CommandLog(id=message_id, payload=payload)
+            try:
+                command_log = CommandLog(id=message_id, payload=payload)
+            except ValueError as error:
+                logging.error(
+                    "Discarded malformed command from topic=%s id=%s: %s",
+                    topic,
+                    message_id,
+                    error,
+                )
+                return
+
             database_service.insert_command_log(command_log)
 
             parsed_message_topic = settings.mqtt_command_logs_parsed_topic
             parsed_message_payload = command_log.generate_parsed_log_message()
 
-            logging.info("Stored command log from topic=%s id=%s", topic, message_id)
+            logging.info(
+                "Stored command from topic=%s id=%s command_type=%s value=%s",
+                topic,
+                message_id,
+                command_log.command_type.name,
+                command_log.value,
+            )
         elif topic == settings.mqtt_power_feedback_topic:
             try:
                 power_feedback = PowerFeedback(id=message_id, payload=payload)

@@ -1,0 +1,15 @@
+BEGIN;
+
+CREATE TYPE gait_mode_enum AS ENUM (
+    'WALKING',
+    'STAIR_ASCENT',
+    'STANDING',
+    'STAIR_DESCENT',
+    'UPSLOPE_WALKING',
+    'DOWNSLOPE_WALKING',
+    'SITTING',
+    'SIT_TO_STAND',
+    'STAND_TO_SIT'
+);
+
+COMMIT;

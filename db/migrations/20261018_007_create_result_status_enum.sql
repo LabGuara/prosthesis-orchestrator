@@ -1,0 +1,5 @@
+BEGIN;
+
+CREATE TYPE result_status_enum AS ENUM ('SUCCESS', 'FAILURE');
+
+COMMIT;

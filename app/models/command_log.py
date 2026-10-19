@@ -1,7 +1,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 from app.utils import parse_int_field, parse_timestamp
@@ -70,14 +70,18 @@ def _parse_command_type(payload: dict) -> CommandType:
 
 @dataclass(slots=True, init=False)
 class CommandLog:
-    id: str
-    timestamp: datetime
+    """A command as the app issued it. `id` is assigned by the database when it is stored."""
+
+    issued_at: datetime
+    received_at: datetime
     command_type: CommandType
     command: Command
+    id: int | None
 
-    def __init__(self, id: str, payload: dict) -> None:
-        self.id = id
-        self.timestamp = parse_timestamp(payload.get("timestamp"))
+    def __init__(self, payload: dict) -> None:
+        self.received_at = datetime.now(timezone.utc)
+        # The app sends the moment it issued the command as `timestamp`.
+        self.issued_at = parse_timestamp(payload.get("timestamp"))
         self.command_type = _parse_command_type(payload)
 
         value = parse_int_field(payload, "value")
@@ -85,14 +89,20 @@ class CommandLog:
             raise ValueError("Missing or non-integer field: value")
 
         self.command = COMMAND_PARSERS[self.command_type](value)
+        self.id = None
 
     @property
     def value(self) -> int:
         return int(self.command.value)
 
-    def generate_parsed_log_message(self) -> str:
+    def generate_parsed_message(self) -> str:
+        """The command as the bridge receives it, carrying the id the feedback must echo."""
+        if self.id is None:
+            raise ValueError("Command must be stored before it is forwarded")
+
         parsed_payload = {
-            "timestamp": self.timestamp.isoformat(),
+            "command_id": self.id,
+            "timestamp": self.issued_at.isoformat(),
             "command_type": int(self.command_type),
             "value": self.value,
         }

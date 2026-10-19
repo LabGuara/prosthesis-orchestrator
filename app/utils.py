@@ -1,7 +1,6 @@
 from datetime import datetime, timezone
 import json
 import logging
-import uuid
 
 
 def parse_int_field(payload: dict, key: str) -> int | None:
@@ -65,9 +64,6 @@ def decode_payload(payload_bytes: bytes) -> dict:
     except json.JSONDecodeError:
         return {"raw": decoded_text}
 
-
-def generate_id() -> str:
-    return str(uuid.uuid4())
 
 def configure_logging(level: str) -> None:
     logging.basicConfig(

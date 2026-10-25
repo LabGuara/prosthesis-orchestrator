@@ -44,7 +44,7 @@ def main() -> None:
             command_log.value,
         )
 
-        publish(settings.mqtt_command_logs_parsed_topic, command_log.generate_parsed_message())
+        publish(settings.mqtt_command_logs_validated_topic, command_log.generate_validated_message())
 
     def handle_command_feedback(payload: dict) -> None:
         try:
@@ -68,7 +68,7 @@ def main() -> None:
             feedback.run_id,
         )
 
-        publish(settings.mqtt_power_feedback_parsed_topic, feedback.generate_parsed_message())
+        publish(settings.mqtt_power_feedback_validated_topic, feedback.generate_validated_message())
 
     def handle_sensor_batch(payload: dict) -> None:
         nonlocal warned_no_run
@@ -98,7 +98,7 @@ def main() -> None:
                 "Stored %s of %s sample(s) for run %s", inserted, len(batch.samples), run_id
             )
 
-        publish(settings.mqtt_logs_parsed_topic, batch.generate_parsed_message(run_id))
+        publish(settings.mqtt_logs_validated_topic, batch.generate_validated_message(run_id))
 
     def handle_message(topic: str, payload_bytes: bytes) -> None:
         payload = decode_payload(payload_bytes)

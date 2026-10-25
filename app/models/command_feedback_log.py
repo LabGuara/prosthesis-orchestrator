@@ -158,8 +158,8 @@ class CommandFeedbackLog:
     def is_success(self) -> bool:
         return self.result_status is ResultStatus.SUCCESS
 
-    def generate_parsed_message(self) -> str:
-        parsed_payload = {
+    def generate_validated_message(self) -> str:
+        validated_payload = {
             "timestamp": self.issued_at.isoformat(),
             "command_id": self.command_id,
             "origin": self.origin.value,
@@ -171,4 +171,4 @@ class CommandFeedbackLog:
             "current": self.current_limit,
             "message": self.message,
         }
-        return json.dumps(parsed_payload, ensure_ascii=False)
+        return json.dumps(validated_payload, ensure_ascii=False)

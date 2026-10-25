@@ -36,7 +36,7 @@ docker compose up --build
 
 ```bash
 docker compose exec mosquitto mosquitto_pub -h localhost -t prosthesis/actions/feedback -m '{"timestamp":"2026-08-17T12:00:04+00:00","command_id":null,"origin":"remote","run_id":"3f2b8c1e-5a4d-4c7e-9b1a-2d6f0e8c4a17","command":"power_on","status":"success","state":"on","gait":1,"current":3000,"message":"test"}'
-docker compose exec mosquitto mosquitto_pub -h localhost -t prosthesis/logs/raw -m '{"timestamp":"2026-08-17T12:00:05+00:00","data":[{"t":0.0125,"pJ":3.4}]}'
+docker compose exec mosquitto mosquitto_pub -h localhost -t prosthesis/logs -m '{"timestamp":"2026-08-17T12:00:05+00:00","data":[{"t":0.0125,"pJ":3.4}]}'
 ```
 
 4. Query the stored samples in PostgreSQL:
@@ -83,7 +83,7 @@ All config is done with environment variables in `.env`.
 - `MQTT_HOST`, `MQTT_PORT`, `MQTT_USERNAME`, `MQTT_PASSWORD`
 - `MQTT_LOGS_TOPIC` (comma-separated)
 - `MQTT_QOS`
-- `MQTT_POWER_FEEDBACK_TOPIC`, `MQTT_POWER_FEEDBACK_PARSED_TOPIC`
+- `MQTT_POWER_FEEDBACK_TOPIC`, `MQTT_POWER_FEEDBACK_VALIDATED_TOPIC`
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 - `LOG_LEVEL`
 
@@ -106,8 +106,8 @@ that type:
 | `3` | actuator current | `3000`-`15000` (mA) |
 
 Each valid command is stored in `command_logs` (`timestamp` becomes `issued_at`, the time the
-orchestrator got it becomes `received_at`) and republished on `MQTT_COMMAND_LOGS_PARSED_TOPIC`
-(default `prosthesis/actions/parsed`) with the id it was stored under, which the bridge echoes
+orchestrator got it becomes `received_at`) and republished on `MQTT_COMMAND_LOGS_VALIDATED_TOPIC`
+(default `prosthesis/actions/validated`) with the id it was stored under, which the bridge echoes
 in its feedback:
 
 ```json
@@ -148,8 +148,8 @@ For each feedback message the orchestrator, in one transaction:
    database does not know is stored as `null`, with a warning;
 2. updates `runs` (see [Runs](#runs));
 
-and then republishes it on `MQTT_POWER_FEEDBACK_PARSED_TOPIC` (default
-`prosthesis/actions/feedback/parsed`).
+and then republishes it on `MQTT_POWER_FEEDBACK_VALIDATED_TOPIC` (default
+`prosthesis/actions/feedback/validated`).
 
 Malformed feedback (missing field, unknown enum value, `gait`/`current` missing while on) is
 logged and discarded.
@@ -173,7 +173,7 @@ At most one run is in progress at a time (a partial unique index enforces it).
 ## Sensor data
 
 The bridge forwards each batch of readings from the control program on `MQTT_LOGS_TOPIC`
-(default `prosthesis/logs/raw`):
+(default `prosthesis/logs`):
 
 ```json
 {
@@ -188,7 +188,7 @@ Each reading becomes one row of `sensor_samples`: `t` (the prosthesis clock, in 
 the start of the run) is stored as whole milliseconds in `t_ms`, the other channels go to
 `sensor_data`. A redelivered batch is skipped sample by sample (`(run_id, t_ms)` is the primary
 key). Batches that arrive with no run in progress are not stored (a warning is logged once).
-The readings are republished on `MQTT_LOGS_PARSED_TOPIC` (default `prosthesis/logs/parsed`) as
+The readings are republished on `MQTT_LOGS_VALIDATED_TOPIC` (default `prosthesis/logs/validated`) as
 `{"run_id": "...", "value": [ ... ]}`, with `run_id` `null` when they were not stored.
 
 ## Data model

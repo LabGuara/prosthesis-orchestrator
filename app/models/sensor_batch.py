@@ -81,9 +81,9 @@ class SensorBatch:
         if not self.samples:
             raise ValueError("Batch has no reading with a numeric clock value")
 
-    def generate_parsed_message(self, run_id: UUID | None) -> str:
-        parsed_payload = {
+    def generate_validated_message(self, run_id: UUID | None) -> str:
+        validated_payload = {
             "run_id": str(run_id) if run_id is not None else None,
             "value": [sample.as_reading() for sample in self.samples],
         }
-        return json.dumps(parsed_payload, ensure_ascii=False)
+        return json.dumps(validated_payload, ensure_ascii=False)

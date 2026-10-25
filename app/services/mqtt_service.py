@@ -102,7 +102,7 @@ class MqttService:
         )
         
         if result.rc != mqtt.MQTT_ERR_SUCCESS:
-            logging.error("Failed to publish parsed message. topic=%s rc=%s", topic, result.rc)
+            logging.error("Failed to publish validated message. topic=%s rc=%s", topic, result.rc)
 
     def run_forever(self) -> None:
         self._client.connect(

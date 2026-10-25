@@ -95,15 +95,15 @@ class CommandLog:
     def value(self) -> int:
         return int(self.command.value)
 
-    def generate_parsed_message(self) -> str:
+    def generate_validated_message(self) -> str:
         """The command as the bridge receives it, carrying the id the feedback must echo."""
         if self.id is None:
             raise ValueError("Command must be stored before it is forwarded")
 
-        parsed_payload = {
+        validated_payload = {
             "command_id": self.id,
             "timestamp": self.issued_at.isoformat(),
             "command_type": int(self.command_type),
             "value": self.value,
         }
-        return json.dumps(parsed_payload)
+        return json.dumps(validated_payload)

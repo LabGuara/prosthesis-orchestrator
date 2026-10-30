@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run prosthesis Orchestrator",
+      "name": "Run Prosthesis Orchestrator",
       "type": "debugpy",
       "request": "launch",
       "module": "app.main",
@@ -10,7 +10,7 @@
       "console": "integratedTerminal"
     },
     {
-      "name": "Run app.migrate",
+      "name": "Run Migrations",
       "type": "debugpy",
       "request": "launch",
       "module": "app.migrate",

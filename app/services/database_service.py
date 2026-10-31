@@ -23,8 +23,6 @@ class DatabaseService:
         self._connection: Connection | None = None
 
 
-    """" Connection management methods """
-
     def _connection_string(self) -> str:
         return (
             f"host={self._settings.db_host} "
@@ -46,8 +44,6 @@ class DatabaseService:
             self._connection.close()
 
     def _in_transaction(self, work: Callable[[Cursor], T]) -> T:
-        """Runs `work` in one transaction: committed if it returns, rolled back if it raises,
-        so a failed statement never leaves the connection stuck in an aborted transaction."""
         if self._connection is None or self._connection.closed:
             self.connect()
 
@@ -61,8 +57,6 @@ class DatabaseService:
             self._connection.rollback()
             raise
 
-
-    """" Migration management methods """
 
     def _get_applied(self) -> set[str]:
         assert self._connection is not None
@@ -99,11 +93,7 @@ class DatabaseService:
         logging.info("Migrations are up to date.")
 
 
-    """ Data manipulation methods """
-
     def insert_command_log(self, command_log: CommandLog) -> int:
-        """Stores the command and returns the id it got, which the feedback will reference."""
-
         def work(cursor: Cursor) -> int:
             cursor.execute(
                 """
@@ -126,9 +116,6 @@ class DatabaseService:
         return command_log.id
 
     def insert_collect(self, collect: Collect) -> None:
-        """Stores a collect the app started. A run whose feedback arrived first may have
-        created it already, without a volunteer; the volunteer is filled in then."""
-
         def work(cursor: Cursor) -> None:
             cursor.execute(
                 """
@@ -141,8 +128,6 @@ class DatabaseService:
         self._in_transaction(work)
 
     def insert_command_feedback_log(self, feedback: CommandFeedbackLog) -> int:
-        """Stores the feedback and updates the runs it starts or ends, in one transaction."""
-
         def work(cursor: Cursor) -> int:
             command_id = feedback.command_id
             if command_id is not None:
@@ -186,12 +171,6 @@ class DatabaseService:
         return feedback.id
 
     def _update_runs(self, cursor: Cursor, feedback: CommandFeedbackLog, feedback_id: int) -> None:
-        """Opens and closes runs. A feedback that leaves the prosthesis on with a run id this
-        database does not know started that run: the run in progress, if any, ends and the new one
-        starts, in the collect the feedback names (created without a volunteer if the app's
-        message starting it has not arrived). A known run id means the run kept going (e.g. a power
-        on while already on). A feedback that leaves the prosthesis off ends the run in progress."""
-
         cursor.execute("SELECT id FROM runs WHERE ended_by_feedback_id IS NULL")
         row = cursor.fetchone()
         in_progress: UUID | None = row[0] if row is not None else None
@@ -255,10 +234,6 @@ class DatabaseService:
         logging.info("Run %s ended by feedback id=%s", run_id, feedback_id)
 
     def insert_sensor_batch(self, batch: SensorBatch) -> tuple[UUID | None, int]:
-        """Stores every sample of the batch under the run in progress. Samples already stored (a
-        redelivered batch) are skipped. Returns the run and the number of new samples; with no run
-        in progress nothing is stored and the run is `None`."""
-
         def work(cursor: Cursor) -> tuple[UUID | None, int]:
             cursor.execute("SELECT id FROM runs WHERE ended_by_feedback_id IS NULL")
             row = cursor.fetchone()

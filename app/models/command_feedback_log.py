@@ -9,8 +9,6 @@ from app.utils import parse_int_field, parse_timestamp
 
 
 class FeedbackCommand(StrEnum):
-    """What the bridge did. Not persisted: for a remote feedback it follows from the command."""
-
     POWER_ON = "power_on"
     POWER_OFF = "power_off"
     SET_GAIT = "set_gait"
@@ -96,14 +94,6 @@ def _parse_current_field(payload: dict) -> int:
 
 @dataclass(slots=True, init=False)
 class CommandFeedbackLog:
-    """The bridge's answer to a command, or a report of something the prosthesis did on its own.
-
-    `gait_mode` and `current_limit` are the settings the prosthesis runs with, so they are only
-    kept while it is on. `run_id` is the run the feedback belongs to: the one running after the
-    command, or, when it left the prosthesis off, the one it ended. `collect_id` is the
-    collect of that run, if any. `id` is assigned by the database when the feedback is stored.
-    """
-
     command_id: int | None
     command: FeedbackCommand
     result_status: ResultStatus

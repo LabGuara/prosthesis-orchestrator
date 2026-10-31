@@ -15,9 +15,6 @@ class SensorSample:
 
     @property
     def t_ms(self) -> int:
-        """The clock in whole milliseconds, as stored. Rounded half up, so 120.61 s is 120610 ms
-        even though 120.61 * 1000 is 120609.99999999999 in floating point, and 0.0125 s is 13 ms
-        (Python's round() would give 12, rounding halves to even)."""
         return math.floor(self.t * 1000 + 0.5)
 
     def as_reading(self) -> dict:
@@ -49,9 +46,6 @@ def _extract_readings(data: object) -> list:
 
 @dataclass(slots=True, init=False)
 class SensorBatch:
-    """One batch of readings forwarded by the bridge. The bridge only forwards readings while a
-    run is in progress, so the batch belongs to the run in progress when it arrives."""
-
     received_at: datetime
     samples: list[SensorSample]
     discarded: int

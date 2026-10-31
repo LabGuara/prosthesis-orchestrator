@@ -44,12 +44,6 @@ class MqttService:
         return f"{base[:14]}-{suffix}"
     
     def _configure_tls(self) -> None:
-        """
-        Configure TLS settings based on MQTT_TLS environment variable and port.
-
-        TLS is enabled if MQTT_TLS environment variable is set to 'true'
-        """
-
         if self._settings.mqtt_tls:
             self._client.tls_set()
             logging.info("TLS enabled for MQTT connection")

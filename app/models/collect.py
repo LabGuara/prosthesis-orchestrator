@@ -4,9 +4,6 @@ from uuid import UUID
 
 @dataclass(slots=True, init=False)
 class Collect:
-    """A collect the app started: the session in which it groups the runs of one
-    volunteer. The name is not unique, since a volunteer can come back for another collect."""
-
     id: UUID
     volunteer: str
 

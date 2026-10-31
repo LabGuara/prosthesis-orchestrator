@@ -38,8 +38,6 @@ class PowerState(IntEnum):
 
 @dataclass(slots=True, frozen=True)
 class ActuatorCurrent:
-    """Raw actuator current setpoint, not an enum: any value in the accepted range is valid."""
-
     value: int
 
     def __post_init__(self) -> None:
@@ -71,8 +69,6 @@ def _parse_command_type(payload: dict) -> CommandType:
 
 
 def _parse_collect_id(payload: dict) -> UUID | None:
-    """The collect is only bookkeeping, so a malformed one is dropped with a warning rather
-    than the command: a stop must never be discarded over it."""
     value = payload.get("collect_id")
     if value is None:
         return None
@@ -89,11 +85,6 @@ def _parse_collect_id(payload: dict) -> UUID | None:
 
 @dataclass(slots=True, init=False)
 class CommandLog:
-    """A command as the app issued it. `collect_id` is the collect the app had open,
-    if any: it is not stored with the command, only passed on to the bridge, which reports it back
-    on the feedback of the run the command starts. `id` is assigned by the database when it is
-    stored."""
-
     issued_at: datetime
     received_at: datetime
     command_type: CommandType
@@ -119,7 +110,6 @@ class CommandLog:
         return int(self.command.value)
 
     def generate_validated_message(self) -> str:
-        """The command as the bridge receives it, carrying the id the feedback must echo."""
         if self.id is None:
             raise ValueError("Command must be stored before it is forwarded")
 

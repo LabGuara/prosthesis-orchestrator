@@ -28,9 +28,7 @@ class ProsthesisPowerState(StrEnum):
 
 
 class FeedbackOrigin(StrEnum):
-    # Answers a command that came from the app.
     REMOTE = "remote"
-    # The prosthesis acted on its own, e.g. a stop requested on the Raspberry Pi.
     INTERNAL = "internal"
 
 
@@ -47,7 +45,6 @@ def _parse_enum_field[T: StrEnum](payload: dict, key: str, enum_type: type[T]) -
 
 
 def _parse_origin(payload: dict) -> FeedbackOrigin:
-    # Bridges older than the origin field only ever answered commands.
     if "origin" not in payload:
         return FeedbackOrigin.REMOTE
     return _parse_enum_field(payload, "origin", FeedbackOrigin)
@@ -89,7 +86,6 @@ def _parse_gait_field(payload: dict) -> GaitMode:
 
 
 def _parse_current_field(payload: dict) -> int:
-    # Reported, not commanded: no range check here, so a surprising value still gets stored.
     value = parse_int_field(payload, "current")
 
     if value is None:
@@ -125,7 +121,6 @@ class CommandFeedbackLog:
     def __init__(self, payload: dict) -> None:
         self.received_at = datetime.now(timezone.utc)
 
-        # The bridge sends the moment it produced the feedback as `timestamp`.
         if "timestamp" not in payload:
             raise ValueError("Missing field: timestamp")
         self.issued_at = parse_timestamp(payload.get("timestamp"))

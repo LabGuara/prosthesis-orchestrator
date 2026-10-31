@@ -103,7 +103,6 @@ class CommandLog:
 
     def __init__(self, payload: dict) -> None:
         self.received_at = datetime.now(timezone.utc)
-        # The app sends the moment it issued the command as `timestamp`.
         self.issued_at = parse_timestamp(payload.get("timestamp"))
         self.command_type = _parse_command_type(payload)
 

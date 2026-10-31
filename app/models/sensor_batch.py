@@ -10,9 +10,7 @@ TIME_KEY = "t"
 
 @dataclass(slots=True, frozen=True)
 class SensorSample:
-    # Prosthesis clock, in seconds since the start of the run, as the control program sent it.
     t: float
-    # Every channel of the sample except the clock, e.g. {"s": 2, "pJ": 12.5, ...}.
     sensor_data: dict
 
     @property
@@ -34,8 +32,6 @@ def _parse_time(value: object) -> float | None:
 
 
 def _extract_readings(data: object) -> list:
-    # The control program sends a JSON array of readings; older paths wrapped it in {"value": [...]}
-    # or forwarded it as text.
     if isinstance(data, str):
         try:
             data = json.loads(data)
@@ -58,7 +54,6 @@ class SensorBatch:
 
     received_at: datetime
     samples: list[SensorSample]
-    # Readings dropped because they were not objects or had no usable clock value.
     discarded: int
 
     def __init__(self, payload: dict) -> None:

@@ -31,7 +31,6 @@ class MqttService:
 
         self._configure_tls()
 
-        # Enable paho debug logging and bind optional callbacks
         self._client.enable_logger()
         self._client.on_disconnect = self._on_disconnect
         self._client.on_log = self._on_log

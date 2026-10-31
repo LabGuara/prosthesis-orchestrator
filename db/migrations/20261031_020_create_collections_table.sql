@@ -1,0 +1,7 @@
+BEGIN;
+
+CREATE TABLE collections (
+    id UUID PRIMARY KEY
+);
+
+COMMIT;

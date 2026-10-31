@@ -71,13 +71,21 @@ class MqttService:
             self._settings.mqtt_logs_topic,
             self._settings.mqtt_command_logs_topic,
             self._settings.mqtt_power_feedback_topic,
+            self._settings.mqtt_collections_topic,
         )
         for topic in topics:
             client.subscribe(topic, qos=self._settings.mqtt_qos)
             logging.info("Subscribed to topic: %s", topic)
 
-    def _on_disconnect(self, _client: mqtt.Client, _userdata, rc: int) -> None:
-        logging.warning("MQTT disconnected. rc=%s", rc)
+    def _on_disconnect(
+        self,
+        _client: mqtt.Client,
+        _userdata,
+        _flags,
+        reason_code,
+        _properties,
+    ) -> None:
+        logging.warning("MQTT disconnected. reason_code=%s", reason_code)
 
     def _on_log(self, _client: mqtt.Client, _userdata, _level, buf: str) -> None:
         logging.debug("paho-mqtt: %s", buf)

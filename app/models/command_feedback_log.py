@@ -64,16 +64,16 @@ def _parse_optional_positive_int(payload: dict, key: str) -> int | None:
     return value
 
 
-def _parse_optional_run_id(payload: dict) -> UUID | None:
-    value = payload.get("run_id")
+def _parse_optional_uuid(payload: dict, key: str) -> UUID | None:
+    value = payload.get(key)
     if value is None:
         return None
     if not isinstance(value, str):
-        raise ValueError("Non-string field: run_id")
+        raise ValueError(f"Non-string field: {key}")
     try:
         return UUID(value.strip())
     except ValueError:
-        raise ValueError(f"Field run_id is not a UUID: {value!r}") from None
+        raise ValueError(f"Field {key} is not a UUID: {value!r}") from None
 
 
 def _parse_gait_field(payload: dict) -> GaitMode:
@@ -104,8 +104,8 @@ class CommandFeedbackLog:
 
     `gait_mode` and `current_limit` are the settings the prosthesis runs with, so they are only
     kept while it is on. `run_id` is the run the feedback belongs to: the one running after the
-    command, or, when it left the prosthesis off, the one it ended. `id` is assigned by the
-    database when the feedback is stored.
+    command, or, when it left the prosthesis off, the one it ended. `collection_id` is the data
+    collection of that run, if any. `id` is assigned by the database when the feedback is stored.
     """
 
     command_id: int | None
@@ -117,6 +117,7 @@ class CommandFeedbackLog:
     message: str
     origin: FeedbackOrigin
     run_id: UUID | None
+    collection_id: UUID | None
     issued_at: datetime
     received_at: datetime
     id: int | None
@@ -138,7 +139,8 @@ class CommandFeedbackLog:
         if self.origin is FeedbackOrigin.INTERNAL and self.command_id is not None:
             raise ValueError("Internal feedback must not reference a command")
 
-        self.run_id = _parse_optional_run_id(payload)
+        self.run_id = _parse_optional_uuid(payload, "run_id")
+        self.collection_id = _parse_optional_uuid(payload, "collection_id")
 
         if self.power_state is ProsthesisPowerState.ON:
             self.gait_mode = _parse_gait_field(payload)
@@ -164,6 +166,7 @@ class CommandFeedbackLog:
             "command_id": self.command_id,
             "origin": self.origin.value,
             "run_id": str(self.run_id) if self.run_id is not None else None,
+            "collection_id": str(self.collection_id) if self.collection_id is not None else None,
             "command": self.command.value,
             "status": self.result_status.value,
             "state": self.power_state.value,

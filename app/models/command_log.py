@@ -3,6 +3,8 @@ from dataclasses import dataclass
 from enum import IntEnum
 from datetime import datetime, timezone
 import json
+import logging
+from uuid import UUID
 
 from app.utils import parse_int_field, parse_timestamp
 
@@ -68,14 +70,35 @@ def _parse_command_type(payload: dict) -> CommandType:
         raise ValueError(f"Unsupported command type: {value}") from None
 
 
+def _parse_collection_id(payload: dict) -> UUID | None:
+    """The collection is only bookkeeping, so a malformed one is dropped with a warning rather
+    than the command: a stop must never be discarded over it."""
+    value = payload.get("collection_id")
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        try:
+            return UUID(value.strip())
+        except ValueError:
+            pass
+
+    logging.warning("Ignoring malformed collection_id %r; the command is kept", value)
+    return None
+
+
 @dataclass(slots=True, init=False)
 class CommandLog:
-    """A command as the app issued it. `id` is assigned by the database when it is stored."""
+    """A command as the app issued it. `collection_id` is the data collection the app had open,
+    if any: it is not stored with the command, only passed on to the bridge, which reports it back
+    on the feedback of the run the command starts. `id` is assigned by the database when it is
+    stored."""
 
     issued_at: datetime
     received_at: datetime
     command_type: CommandType
     command: Command
+    collection_id: UUID | None
     id: int | None
 
     def __init__(self, payload: dict) -> None:
@@ -89,6 +112,7 @@ class CommandLog:
             raise ValueError("Missing or non-integer field: value")
 
         self.command = COMMAND_PARSERS[self.command_type](value)
+        self.collection_id = _parse_collection_id(payload)
         self.id = None
 
     @property
@@ -105,5 +129,6 @@ class CommandLog:
             "timestamp": self.issued_at.isoformat(),
             "command_type": int(self.command_type),
             "value": self.value,
+            "collection_id": str(self.collection_id) if self.collection_id is not None else None,
         }
         return json.dumps(validated_payload)

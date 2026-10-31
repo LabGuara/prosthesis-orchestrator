@@ -84,6 +84,7 @@ All config is done with environment variables in `.env`.
 - `MQTT_LOGS_TOPIC` (comma-separated)
 - `MQTT_QOS`
 - `MQTT_POWER_FEEDBACK_TOPIC`, `MQTT_POWER_FEEDBACK_VALIDATED_TOPIC`
+- `MQTT_COLLECTIONS_TOPIC`
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`
 - `LOG_LEVEL`
 
@@ -93,7 +94,7 @@ Every command has the same shape, whatever its type. The app publishes it on
 `MQTT_COMMAND_LOGS_TOPIC` (default `prosthesis/actions`):
 
 ```json
-{"timestamp": "2026-08-17T12:00:00.000Z", "command_type": 2, "value": 1}
+{"timestamp": "2026-08-17T12:00:00.000Z", "command_type": 2, "value": 1, "collection_id": "8c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f"}
 ```
 
 The command is identified by `command_type` alone; `value` is validated against the range of
@@ -105,16 +106,21 @@ that type:
 | `2` | power | `1` on, `2` off |
 | `3` | actuator current | `3000`-`15000` (mA) |
 
+`collection_id` is the data collection the app had open when it sent the command, or `null` (see
+[Data collections](#data-collections)).
+
 Each valid command is stored in `command_logs` (`timestamp` becomes `issued_at`, the time the
 orchestrator got it becomes `received_at`) and republished on `MQTT_COMMAND_LOGS_VALIDATED_TOPIC`
 (default `prosthesis/actions/validated`) with the id it was stored under, which the bridge echoes
-in its feedback:
+in its feedback. The `collection_id` is not stored with the command, only passed on:
 
 ```json
-{"command_id": 42, "timestamp": "2026-08-17T12:00:00+00:00", "command_type": 2, "value": 1}
+{"command_id": 42, "timestamp": "2026-08-17T12:00:00+00:00", "command_type": 2, "value": 1, "collection_id": "8c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f"}
 ```
 
 Malformed commands (missing field, unknown type or value out of range) are logged and discarded.
+A malformed `collection_id` only loses the collection, with a warning: the command still goes
+through, since a stop must never be discarded over it.
 
 ## Command feedback
 
@@ -128,6 +134,7 @@ The value must match the bridge's own `MQTT_POWER_FEEDBACK_TOPIC` on the Raspber
   "command_id": 42,
   "origin": "remote",
   "run_id": "3f2b8c1e-5a4d-4c7e-9b1a-2d6f0e8c4a17",
+  "collection_id": "8c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f",
   "command": "power_on",
   "status": "success",
   "state": "on",
@@ -140,7 +147,8 @@ The value must match the bridge's own `MQTT_POWER_FEEDBACK_TOPIC` on the Raspber
 `origin` is `remote` for the answer to a command and `internal` when the prosthesis acted on its
 own (a stop requested on the Pi), in which case `command_id` is `null`. `gait` and `current` are
 the settings the prosthesis runs with, so they are `null` while it is off. `run_id` is the run
-the feedback belongs to (see [Runs](#runs)).
+the feedback belongs to (see [Runs](#runs)), and `collection_id` the data collection of that run,
+or `null` (see [Data collections](#data-collections)).
 
 For each feedback message the orchestrator, in one transaction:
 
@@ -163,12 +171,45 @@ feedback that ended it. For each feedback the orchestrator:
 
 - **prosthesis on, unknown `run_id`**: the reported run started. The run in progress, if any,
   ends with this feedback (a gait or current change ends one run and starts the next with a
-  single feedback), and the new run is created with `started_by_feedback_id` = this feedback;
+  single feedback), and the new run is created with `started_by_feedback_id` = this feedback, in
+  the data collection the feedback names;
 - **prosthesis on, known `run_id`**: the run kept going (e.g. a power on while already on);
   nothing changes;
 - **prosthesis off**: the run in progress ends with this feedback (`ended_by_feedback_id`).
 
 At most one run is in progress at a time (a partial unique index enforces it).
+
+## Data collections
+
+A data collection is a session in which the app groups the runs of one volunteer. When the
+collection starts, the app names it with a UUID v4 and announces it on `MQTT_COLLECTIONS_TOPIC`
+(default `prosthesis/collections`):
+
+```json
+{"collection_id": "8c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f", "volunteer": "Maria Souza"}
+```
+
+The orchestrator stores it in `collections`. `volunteer` is the name typed in the app, which is not
+unique: the same volunteer can come back for another collection. A malformed announcement
+(missing field, `collection_id` not a UUID, empty `volunteer`) is logged and discarded.
+
+The app then sends the `collection_id` with every command it issues while the collection is open;
+the bridge keeps the collection of the command that started a run and reports it on every
+feedback of that run, and the orchestrator links the run to it (`runs.collection_id`). A run
+started outside a collection has `collection_id` `null`. If a run reaches the orchestrator before
+the announcement of its collection, the collection is created without a volunteer (`null`), which
+the announcement fills in if it arrives later.
+
+A collection starts and ends with its first and last runs (`ended_at` is that of the last run that
+ended):
+
+```sql
+SELECT min(started.issued_at) AS started_at, max(ended.issued_at) AS ended_at
+FROM runs
+JOIN command_feedback_logs started ON started.id = runs.started_by_feedback_id
+LEFT JOIN command_feedback_logs ended ON ended.id = runs.ended_by_feedback_id
+WHERE runs.collection_id = '8c1d2e3f-4a5b-4c6d-8e7f-9a0b1c2d3e4f';
+```
 
 ## Sensor data
 
@@ -178,9 +219,13 @@ The bridge forwards each batch of readings from the control program on `MQTT_LOG
 ```json
 {
   "timestamp": "2026-08-17T12:00:05.012345+00:00",
-  "data": [{"t": 2.0125, "s": 1, "pJ": 3.4, "cJ": 512, "cJl": 512, "pP": 0.1, "cP": 80, "cPl": 80}]
+  "data": [{"s": 1, "t": 2.0125, "pJ": 3.4, "cJ": 512, "cJl": 512, "pP": 0.1, "cP": 80, "cPl": 80, "g1": 41.2, "g2": 30.5, "g3": 12.8, "g4": 0.4}]
 }
 ```
+
+Besides the clock, each reading has the microstate (`s`), the angle, current and limited current
+of the knee (`pJ`, `cJ`, `cJl`) and of the ankle (`pP`, `cP`, `cPl`), and the four ground
+reaction force sensors (`g1` to `g4`, which have no unit).
 
 The bridge only forwards readings while a run is in progress, and publishes a run's feedback
 before its first reading, so every batch is stored under the run in progress when it arrives.
@@ -197,7 +242,8 @@ The readings are republished on `MQTT_LOGS_VALIDATED_TOPIC` (default `prosthesis
 | --- | --- |
 | `command_logs` | command received from the app |
 | `command_feedback_logs` | feedback from the bridge, linked to its command (`command_id`) |
-| `runs` | run of the control program (`id` is the UUID from the bridge), with the feedback that started (`started_by_feedback_id`) and ended (`ended_by_feedback_id`) it; the end is `null` while it is in progress |
+| `runs` | run of the control program (`id` is the UUID from the bridge), with the feedback that started (`started_by_feedback_id`) and ended (`ended_by_feedback_id`) it, and the data collection it belongs to (`collection_id`); the end is `null` while it is in progress, the collection outside one |
+| `collections` | data collection, with its `id` (the UUID from the app) and `volunteer` (the name typed in the app, not unique; `null` until the collection's announcement arrives) |
 | `sensor_samples` | reading, keyed by `(run_id, t_ms)` |
 
 The gait mode of a feedback is stored as `gait_mode_enum` (`WALKING` to `STAND_TO_SIT`, modes `1`-`9`
@@ -205,6 +251,8 @@ of the MQTT messages, in that order).
 
 Migrations `20261018_007` to `20261018_019` create this model, one enum or table per migration,
 keep the existing rows of `command_logs` and drop the old `logs` table and `log_level` enum.
+Migrations `20261031_020` to `20261031_022` add `collections`, `runs.collection_id` and
+`collections.volunteer`; the runs stored before them stay outside any collection.
 
 ## Cloud migration (same app image)
 For production/cloud, keep this Python app unchanged and switch only endpoints/credentials:

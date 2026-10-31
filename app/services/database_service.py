@@ -10,7 +10,7 @@ from psycopg.types.json import Jsonb
 from app.settings import Settings
 from app.models.command_log import CommandLog
 from app.models.command_feedback_log import CommandFeedbackLog, ProsthesisPowerState
-from app.models.data_collection import DataCollection
+from app.models.collect import Collect
 from app.models.sensor_batch import SensorBatch
 
 
@@ -125,17 +125,17 @@ class DatabaseService:
         command_log.id = self._in_transaction(work)
         return command_log.id
 
-    def insert_collection(self, collection: DataCollection) -> None:
-        """Stores a collection the app started. A run whose feedback arrived first may have
+    def insert_collect(self, collect: Collect) -> None:
+        """Stores a collect the app started. A run whose feedback arrived first may have
         created it already, without a volunteer; the volunteer is filled in then."""
 
         def work(cursor: Cursor) -> None:
             cursor.execute(
                 """
-                INSERT INTO collections (id, volunteer) VALUES (%s, %s)
+                INSERT INTO collects (id, volunteer) VALUES (%s, %s)
                 ON CONFLICT (id) DO UPDATE SET volunteer = EXCLUDED.volunteer
                 """,
-                (collection.id, collection.volunteer),
+                (collect.id, collect.volunteer),
             )
 
         self._in_transaction(work)
@@ -188,7 +188,7 @@ class DatabaseService:
     def _update_runs(self, cursor: Cursor, feedback: CommandFeedbackLog, feedback_id: int) -> None:
         """Opens and closes runs. A feedback that leaves the prosthesis on with a run id this
         database does not know started that run: the run in progress, if any, ends and the new one
-        starts, in the data collection the feedback names (created without a volunteer if the app's
+        starts, in the collect the feedback names (created without a volunteer if the app's
         message starting it has not arrived). A known run id means the run kept going (e.g. a power
         on while already on). A feedback that leaves the prosthesis off ends the run in progress."""
 
@@ -230,21 +230,21 @@ class DatabaseService:
         if in_progress is not None:
             self._end_run(cursor, in_progress, feedback_id)
 
-        if feedback.collection_id is not None:
+        if feedback.collect_id is not None:
             cursor.execute(
-                "INSERT INTO collections (id) VALUES (%s) ON CONFLICT (id) DO NOTHING",
-                (feedback.collection_id,),
+                "INSERT INTO collects (id) VALUES (%s) ON CONFLICT (id) DO NOTHING",
+                (feedback.collect_id,),
             )
 
         cursor.execute(
-            "INSERT INTO runs (id, started_by_feedback_id, collection_id) VALUES (%s, %s, %s)",
-            (feedback.run_id, feedback_id, feedback.collection_id),
+            "INSERT INTO runs (id, started_by_feedback_id, collect_id) VALUES (%s, %s, %s)",
+            (feedback.run_id, feedback_id, feedback.collect_id),
         )
         logging.info(
-            "Run %s started by feedback id=%s in collection %s",
+            "Run %s started by feedback id=%s in collect %s",
             feedback.run_id,
             feedback_id,
-            feedback.collection_id,
+            feedback.collect_id,
         )
 
     def _end_run(self, cursor: Cursor, run_id: UUID, feedback_id: int) -> None:

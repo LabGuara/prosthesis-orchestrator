@@ -71,7 +71,7 @@ class MqttService:
             self._settings.mqtt_logs_topic,
             self._settings.mqtt_command_logs_topic,
             self._settings.mqtt_power_feedback_topic,
-            self._settings.mqtt_collections_topic,
+            self._settings.mqtt_collects_topic,
         )
         for topic in topics:
             client.subscribe(topic, qos=self._settings.mqtt_qos)

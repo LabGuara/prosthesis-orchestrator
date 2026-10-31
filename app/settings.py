@@ -14,7 +14,7 @@ class Settings:
     mqtt_command_logs_validated_topic: str
     mqtt_power_feedback_topic: str
     mqtt_power_feedback_validated_topic: str
-    mqtt_collections_topic: str
+    mqtt_collects_topic: str
     mqtt_qos: int
     mqtt_client_id: str
     mqtt_tls: bool
@@ -38,7 +38,7 @@ class Settings:
         self.mqtt_command_logs_validated_topic = os.getenv("MQTT_COMMAND_LOGS_VALIDATED_TOPIC", "prosthesis/actions/validated")
         self.mqtt_power_feedback_topic = os.getenv("MQTT_POWER_FEEDBACK_TOPIC", "prosthesis/actions/feedback")
         self.mqtt_power_feedback_validated_topic = os.getenv("MQTT_POWER_FEEDBACK_VALIDATED_TOPIC", "prosthesis/actions/feedback/validated")
-        self.mqtt_collections_topic = os.getenv("MQTT_COLLECTIONS_TOPIC", "prosthesis/collections")
+        self.mqtt_collects_topic = os.getenv("MQTT_COLLECTS_TOPIC", "prosthesis/collects")
         self.mqtt_qos = int(os.getenv("MQTT_QOS", "1"))
         self.mqtt_client_id = os.getenv("MQTT_CLIENT_ID", "prosthesis-logger")
         self.mqtt_tls = os.getenv("MQTT_TLS", "false").lower() == "true"

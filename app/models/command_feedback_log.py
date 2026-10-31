@@ -104,8 +104,8 @@ class CommandFeedbackLog:
 
     `gait_mode` and `current_limit` are the settings the prosthesis runs with, so they are only
     kept while it is on. `run_id` is the run the feedback belongs to: the one running after the
-    command, or, when it left the prosthesis off, the one it ended. `collection_id` is the data
-    collection of that run, if any. `id` is assigned by the database when the feedback is stored.
+    command, or, when it left the prosthesis off, the one it ended. `collect_id` is the
+    collect of that run, if any. `id` is assigned by the database when the feedback is stored.
     """
 
     command_id: int | None
@@ -117,7 +117,7 @@ class CommandFeedbackLog:
     message: str
     origin: FeedbackOrigin
     run_id: UUID | None
-    collection_id: UUID | None
+    collect_id: UUID | None
     issued_at: datetime
     received_at: datetime
     id: int | None
@@ -140,7 +140,7 @@ class CommandFeedbackLog:
             raise ValueError("Internal feedback must not reference a command")
 
         self.run_id = _parse_optional_uuid(payload, "run_id")
-        self.collection_id = _parse_optional_uuid(payload, "collection_id")
+        self.collect_id = _parse_optional_uuid(payload, "collect_id")
 
         if self.power_state is ProsthesisPowerState.ON:
             self.gait_mode = _parse_gait_field(payload)
@@ -166,7 +166,7 @@ class CommandFeedbackLog:
             "command_id": self.command_id,
             "origin": self.origin.value,
             "run_id": str(self.run_id) if self.run_id is not None else None,
-            "collection_id": str(self.collection_id) if self.collection_id is not None else None,
+            "collect_id": str(self.collect_id) if self.collect_id is not None else None,
             "command": self.command.value,
             "status": self.result_status.value,
             "state": self.power_state.value,

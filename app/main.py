@@ -8,7 +8,7 @@ from app.settings import Settings
 from app.services.database_service import DatabaseService
 from app.models.command_log import CommandLog
 from app.models.command_feedback_log import CommandFeedbackLog
-from app.models.data_collection import DataCollection
+from app.models.collect import Collect
 from app.models.sensor_batch import SensorBatch
 from app.services.mqtt_service import MqttService
 from app.utils import configure_logging, decode_payload
@@ -38,11 +38,11 @@ def main() -> None:
 
         command_id = database_service.insert_command_log(command_log)
         logging.info(
-            "Stored command id=%s command_type=%s value=%s collection_id=%s",
+            "Stored command id=%s command_type=%s value=%s collect_id=%s",
             command_id,
             command_log.command_type.name,
             command_log.value,
-            command_log.collection_id,
+            command_log.collect_id,
         )
 
         publish(settings.mqtt_command_logs_validated_topic, command_log.generate_validated_message())
@@ -57,7 +57,7 @@ def main() -> None:
         feedback_id = database_service.insert_command_feedback_log(feedback)
         logging.info(
             "Stored command feedback id=%s command_id=%s origin=%s command=%s status=%s "
-            "state=%s gait=%s current=%s run_id=%s collection_id=%s",
+            "state=%s gait=%s current=%s run_id=%s collect_id=%s",
             feedback_id,
             feedback.command_id,
             feedback.origin.value,
@@ -67,20 +67,20 @@ def main() -> None:
             feedback.gait_mode.name if feedback.gait_mode is not None else None,
             feedback.current_limit,
             feedback.run_id,
-            feedback.collection_id,
+            feedback.collect_id,
         )
 
         publish(settings.mqtt_power_feedback_validated_topic, feedback.generate_validated_message())
 
-    def handle_collection(payload: dict) -> None:
+    def handle_collect(payload: dict) -> None:
         try:
-            collection = DataCollection(payload=payload)
+            collect = Collect(payload=payload)
         except ValueError as error:
-            logging.error("Discarded malformed collection: %s", error)
+            logging.error("Discarded malformed collect: %s", error)
             return
 
-        database_service.insert_collection(collection)
-        logging.info("Stored collection id=%s", collection.id)
+        database_service.insert_collect(collect)
+        logging.info("Stored collect id=%s", collect.id)
 
     def handle_sensor_batch(payload: dict) -> None:
         nonlocal warned_no_run
@@ -122,8 +122,8 @@ def main() -> None:
                 handle_command_feedback(payload)
             elif topic == settings.mqtt_logs_topic:
                 handle_sensor_batch(payload)
-            elif topic == settings.mqtt_collections_topic:
-                handle_collection(payload)
+            elif topic == settings.mqtt_collects_topic:
+                handle_collect(payload)
             else:
                 logging.warning("Ignoring message on unexpected topic=%s", topic)
         except Exception:

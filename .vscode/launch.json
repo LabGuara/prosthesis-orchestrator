@@ -7,7 +7,12 @@
       "request": "launch",
       "module": "app.main",
       "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "windows": {
+        "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+        "debugAdapterPython": "${workspaceFolder}/.venv/Scripts/python.exe",
+        "debugLauncherPython": "${workspaceFolder}/.venv/Scripts/python.exe"
+      }
     },
     {
       "name": "Run Migrations",
@@ -15,7 +20,12 @@
       "request": "launch",
       "module": "app.migrate",
       "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal"
+      "console": "integratedTerminal",
+      "windows": {
+        "python": "${workspaceFolder}/.venv/Scripts/python.exe",
+        "debugAdapterPython": "${workspaceFolder}/.venv/Scripts/python.exe",
+        "debugLauncherPython": "${workspaceFolder}/.venv/Scripts/python.exe"
+      }
     }
   ]
 }
